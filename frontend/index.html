@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Engineering Game Night</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Platform Engineering Game Night</h1>
+            <div class="user-info">
+                <span id="username-display">Not logged in</span>
+                <button id="logout-btn" class="btn-sm" style="display: none;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </header>
+
+        <div id="auth-container" class="auth-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="tabs">
+                        <div id="login-tab" class="tab tab-active">Login</div>
+                        <div id="register-tab" class="tab">Register</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-username">Username</label>
+                            <input type="text" id="login-username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                        <div class="error-message" id="login-error"></div>
+                    </form>
+                    <form id="register-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="register-username">Username</label>
+                            <input type="text" id="register-username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">Password</label>
+                            <input type="password" id="register-password" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                        <div class="error-message" id="register-error"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-content" class="main-content" style="display: none;">
+            <div class="tab-container">
+                <div class="tabs">
+                    <div id="active-polls-tab" class="tab tab-active">Active Polls</div>
+                    <div id="closed-polls-tab" class="tab">Closed Polls</div>
+                    <div id="create-poll-tab" class="tab">Create Poll</div>
+                    <div id="admin-tab" class="tab" style="display: none;">Admin</div>
+                </div>
+                
+                <div id="active-polls-content" class="tab-content">
+                    <div class="section-header">
+                        <h2>Active Polls</h2>
+                        <div class="loading" id="active-polls-loading">Loading...</div>
+                    </div>
+                    <div class="polls-container" id="active-polls-container"></div>
+                </div>
+                
+                <div id="closed-polls-content" class="tab-content" style="display: none;">
+                    <div class="section-header">
+                        <h2>Closed Polls</h2>
+                        <div class="loading" id="closed-polls-loading">Loading...</div>
+                    </div>
+                    <div class="polls-container" id="closed-polls-container"></div>
+                </div>
+                
+                <div id="create-poll-content" class="tab-content" style="display: none;">
+                    <div class="section-header">
+                        <h2>Create New Poll</h2>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="create-poll-form">
+                                <div class="form-group">
+                                    <label for="poll-title">Poll Title*</label>
+                                    <input type="text" id="poll-title" name="title" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="poll-description">Description (Optional)</label>
+                                    <textarea id="poll-description" name="description" rows="3"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="poll-expiry">Expiration Date (Optional)</label>
+                                    <input type="datetime-local" id="poll-expiry" name="expires_at">
+                                </div>
+                                <div class="form-group">
+                                    <label>Poll Options*</label>
+                                    <div id="poll-options-container">
+                                        <div class="poll-option">
+                                            <input type="text" name="option-text-1" placeholder="Option text" required>
+                                            <div class="option-date-container">
+                                                <input type="checkbox" class="date-option-toggle" id="date-toggle-1">
+                                                <label for="date-toggle-1" class="date-toggle-label">Include date/time</label>
+                                                <input type="datetime-local" name="option-date-1" class="date-input" style="display: none;">
+                                            </div>
+                                        </div>
+                                        <div class="poll-option">
+                                            <input type="text" name="option-text-2" placeholder="Option text" required>
+                                            <div class="option-date-container">
+                                                <input type="checkbox" class="date-option-toggle" id="date-toggle-2">
+                                                <label for="date-toggle-2" class="date-toggle-label">Include date/time</label>
+                                                <input type="datetime-local" name="option-date-2" class="date-input" style="display: none;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="add-option-btn" class="btn btn-sm"><i class="fas fa-plus"></i> Add Option</button>
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">Create Poll</button>
+                                </div>
+                                <div class="error-message" id="create-poll-error"></div>
+                                <div class="success-message" id="create-poll-success"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="admin-content" class="tab-content" style="display: none;">
+                    <div class="section-header">
+                        <h2>Admin Panel</h2>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Add New User</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="add-user-form">
+                                <div class="form-group">
+                                    <label for="new-username">Username</label>
+                                    <input type="text" id="new-username" name="username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-password">Password</label>
+                                    <input type="password" id="new-password" name="password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="is-admin">Admin Privileges</label>
+                                    <input type="checkbox" id="is-admin" name="is_admin">
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">Add User</button>
+                                </div>
+                                <div class="error-message" id="add-user-error"></div>
+                                <div class="success-message" id="add-user-success"></div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-20">
+                        <div class="card-header">
+                            <h3>User Management</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="loading" id="users-loading">Loading users...</div>
+                            <div class="users-container" id="users-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Poll Detail Modal -->
+        <div id="poll-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-poll-title"></h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-poll-description" class="poll-description"></p>
+                    <div id="modal-poll-metadata" class="poll-metadata">
+                        <p>Created by: <span id="modal-poll-creator"></span></p>
+                        <p>Created: <span id="modal-poll-created"></span></p>
+                        <p id="modal-poll-expiry-container">Expires: <span id="modal-poll-expiry"></span></p>
+                    </div>
+                    
+                    <div id="modal-poll-voting-section">
+                        <h3>Cast Your Vote</h3>
+                        <form id="vote-form">
+                            <div id="modal-poll-options" class="poll-options-list"></div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Vote</button>
+                            </div>
+                            <div class="error-message" id="vote-error"></div>
+                            <div class="success-message" id="vote-success"></div>
+                        </form>
+                    </div>
+                    
+                    <div id="modal-poll-results-section" class="mt-20">
+                        <h3>Current Results</h3>
+                        <div class="loading" id="results-loading">Loading results...</div>
+                        <div id="poll-results-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/polls.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
