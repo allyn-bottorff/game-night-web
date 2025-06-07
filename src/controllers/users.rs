@@ -1,8 +1,7 @@
 use rocket::http::CookieJar;
 use rocket::response::{Flash, Redirect};
-use rocket::form::Form;
+use rocket::uri;
 use sqlx::SqlitePool;
-use bcrypt;
 use log::{info, error};
 
 use crate::models::user::{User, LoginForm, NewUserForm};

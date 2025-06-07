@@ -1,10 +1,9 @@
-use rocket::form::Form;
 use rocket::response::{Flash, Redirect};
-use sqlx::SqlitePool;
-use chrono::{DateTime, Utc, TimeZone};
+use sqlx::{Row, SqlitePool};
+use chrono::Utc;
 use log::{info, error};
 
-use crate::models::poll::{Poll, PollOption, Vote, NewPollForm, VoteForm, PollWithCreator};
+use crate::models::poll::{PollOption, NewPollForm, PollWithCreator};
 use crate::models::User;
 
 // Get active polls
@@ -191,21 +190,20 @@ pub async fn vote_on_poll(
 // Get poll results
 pub async fn get_poll_results(
     pool: &SqlitePool,
-    poll_id: i64
+    poll_id: i64,
 ) -> Result<Vec<(PollOption, i64)>, sqlx::Error> {
     let options = get_poll_options(pool, poll_id).await?;
-    
+
     let mut results = Vec::new();
     for option in options {
-        let count = sqlx::query("SELECT COUNT(*) as count FROM votes WHERE option_id = ?")
+        let count = sqlx::query_scalar("SELECT COUNT(*) FROM votes WHERE option_id = ?")
             .bind(option.id)
             .fetch_one(pool)
-            .await?
-            .get::<i64, _>(0);
-            
+            .await?;
+
         results.push((option, count));
     }
-    
+
     Ok(results)
 }
 

@@ -9,7 +9,7 @@ use rocket_dyn_templates::{Template, context};
 use sqlx::SqlitePool;
 
 use crate::auth::{AdminUser, AuthenticatedUser};
-use crate::controllers::*;
+use crate::controllers::{polls, users, metrics};
 use crate::models::poll::{NewPollForm, VoteForm};
 use crate::models::user::{LoginForm, NewUserForm};
 
@@ -37,13 +37,13 @@ pub async fn login_post(
     cookies: &CookieJar<'_>,
     pool: &State<SqlitePool>,
 ) -> Result<Redirect, Flash<Redirect>> {
-    metrics::increment_login_attempt();
+    crate::controllers::metrics::increment_login_attempt();
 
     let result = users::login_controller(pool, &form, cookies).await;
 
     match &result {
-        Ok(_) => metrics::increment_successful_login(),
-        Err(_) => metrics::increment_failed_login(),
+        Ok(_) => crate::controllers::metrics::increment_successful_login(),
+        Err(_) => crate::controllers::metrics::increment_failed_login(),
     }
 
     result
@@ -83,7 +83,10 @@ pub async fn dashboard(
 }
 
 #[get("/polls")]
-pub async fn polls(user: AuthenticatedUser, pool: &State<SqlitePool>) -> Result<Template, Status> {
+pub async fn get_polls(
+    user: AuthenticatedUser,
+    pool: &State<SqlitePool>,
+) -> Result<Template, Status> {
     let active_polls = polls::get_active_polls(pool)
         .await
         .map_err(|_| Status::InternalServerError)?;
@@ -248,6 +251,6 @@ pub async fn add_user_post(
 
 // Metrics endpoint
 #[get("/metrics")]
-pub async fn metrics(pool: &State<SqlitePool>) -> String {
-    metrics::get_metrics(pool).await
+pub async fn metrics_endpoint(pool: &State<SqlitePool>) -> String {
+    crate::controllers::metrics::get_metrics(pool).await
 }

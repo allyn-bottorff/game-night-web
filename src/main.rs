@@ -30,7 +30,7 @@ fn rocket() -> _ {
                 login_post,
                 logout,
                 dashboard,
-                polls,
+                get_polls,
                 poll_detail,
                 create_poll_page,
                 create_poll_post,
@@ -38,7 +38,7 @@ fn rocket() -> _ {
                 admin_users,
                 add_user_page,
                 add_user_post,
-                metrics
+                metrics_endpoint
             ],
         )
         .mount("/static", FileServer::from(relative!("src/static")))
