@@ -1,89 +1,105 @@
-# Platform Engineering Game Night
+# Platform Engineering Game Night Web Application
 
-A web application for creating and hosting polls for game nights. The application allows team members to log in, create polls, vote, and view results.
+A web application for creating and managing polls for game night events. This application is built using Rust with the Rocket framework as an MVC application.
 
 ## Features
 
-- User authentication (login, registration)
-- Poll creation with arbitrary options
-- Support for calendar dates and times as poll options
-- Live poll results
-- Expiration dates for polls
-- Admin panel for user management
-- Mobile-friendly interface
+- User authentication and authorization
+- Poll creation with multiple options
+- Support for date/time options in polls
+- Real-time poll results
+- User management for administrators
+- Prometheus-compatible metrics endpoint
 
-## Project Structure
+## Prerequisites
 
-The project is divided into two main parts:
-
-### Backend
-
-- Built with Rust using the Axum web framework
-- SQLite database for persistent storage
-- JWT-based authentication
-- RESTful API endpoints
-- Prometheus metrics
-
-### Frontend
-
-- Built with HTML5, CSS, and vanilla JavaScript
-- Responsive design for mobile and desktop
-- No external frameworks or libraries (except Font Awesome for icons)
-
-## Getting Started
-
-### Prerequisites
-
-- Rust and Cargo
+- Rust and Cargo (latest stable version)
 - SQLite
 
-### Running the Backend
+## Setup and Installation
 
-1. Navigate to the backend directory:
-   ```
-   cd game-night-web/backend
-   ```
+1. Clone the repository:
 
-2. Run the server:
-   ```
-   cargo run
-   ```
+```bash
+git clone https://github.com/your-username/game-night-web.git
+cd game-night-web
+```
 
-The server will start on `http://localhost:3000` by default.
+2. Copy the `.env.example` file to `.env` (or use the existing `.env` file):
 
-### Running the Frontend
+```bash
+cp .env.example .env
+```
 
-1. Navigate to the frontend directory:
-   ```
-   cd game-night-web/frontend
-   ```
+3. Generate a secure key for the Rocket secret:
 
-2. Serve the files with any simple HTTP server. For example, using Python:
-   ```
-   python -m http.server 8080
-   ```
+```bash
+openssl rand -base64 32
+```
 
-The frontend will be available at `http://localhost:8080`.
+4. Update the `ROCKET_SECRET_KEY` in the `.env` file with the generated key.
 
-## API Endpoints
+5. Build and run the application:
 
-- `POST /api/login` - User login
-- `POST /api/register` - User registration
-- `GET /api/polls` - List polls
-- `POST /api/polls` - Create a new poll
-- `GET /api/polls/:id` - Get a specific poll
-- `PUT /api/polls/:id` - Update a poll
-- `POST /api/polls/:id/vote` - Vote on a poll
-- `GET /api/polls/:id/results` - Get poll results
-- `GET /api/users` - List users (admin only)
-- `POST /api/users` - Create a new user (admin only)
-- `GET /api/health` - Health check
-- `GET /api/metrics` - Prometheus metrics
+```bash
+cargo run
+```
 
-## Default Credentials
+6. Open your browser and navigate to `http://localhost:8000`
 
-A default admin user is created on first run:
+## Default Admin Account
+
+The application is initialized with a default admin account:
+
 - Username: `admin`
 - Password: `admin`
 
-It's recommended to change this password after first login.
+**Important**: Please change the default admin password after the first login for security reasons.
+
+## Project Structure
+
+- `src/`
+  - `main.rs` - Application entry point
+  - `models/` - Data models
+  - `controllers/` - Business logic
+  - `routes/` - Route definitions
+  - `db/` - Database operations
+  - `auth/` - Authentication logic
+  - `templates/` - Rocket template files (views)
+  - `static/` - Static assets (CSS, JS)
+- `migrations/` - Database migrations
+- `tests/` - Tests
+
+## Database
+
+The application uses SQLite as its database. The database file is created automatically when the application is first run. Database migrations are applied automatically during application startup.
+
+## Metrics
+
+The application exposes a Prometheus-compatible metrics endpoint at `/metrics` which can be scraped by Prometheus for monitoring.
+
+## Development
+
+### Running in Development Mode
+
+```bash
+cargo run
+```
+
+### Running Tests
+
+```bash
+cargo test
+```
+
+### Building for Production
+
+```bash
+cargo build --release
+```
+
+The compiled binary will be available at `target/release/game-night-web`.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

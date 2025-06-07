@@ -1,0 +1,46 @@
+{% extends "base" %}
+
+{% block title %}Manage Users - Platform Engineering Game Night{% endblock %}
+
+{% block content %}
+<div class="admin-users">
+    <h2>User Management</h2>
+    
+    <div class="action-bar">
+        <a href="/admin/users/add" class="btn btn-primary">Add New User</a>
+    </div>
+    
+    <div class="users-list">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Created</th>
+                    <th>Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.created_at | date(format="%B %d, %Y") }}</td>
+                    <td>
+                        <span class="role-badge {{ user.is_admin | ternary('admin', 'user') }}">
+                            {{ user.is_admin | ternary('Admin', 'User') }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="help-text">
+        <h3>About User Roles</h3>
+        <ul>
+            <li><strong>Admin:</strong> Can create polls, vote on polls, and add new users</li>
+            <li><strong>User:</strong> Can create polls and vote on polls</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

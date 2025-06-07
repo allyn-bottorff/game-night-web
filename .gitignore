@@ -1,5 +1,4 @@
 # Generated files
-backend/target/
 **/*.rs.bk
 Cargo.lock
 
@@ -22,3 +21,8 @@ Cargo.lock
 node_modules/
 .DS_Store
 *.log
+
+
+# Added by cargo
+
+/target

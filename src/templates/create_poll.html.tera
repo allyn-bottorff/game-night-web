@@ -1,0 +1,116 @@
+{% extends "base" %}
+
+{% block title %}Create Poll - Platform Engineering Game Night{% endblock %}
+
+{% block content %}
+<div class="create-poll">
+    <h2>Create a New Poll</h2>
+    
+    <form action="/polls/create" method="post">
+        <div class="form-group">
+            <label for="title">Poll Title</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description (Optional)</label>
+            <textarea id="description" name="description" rows="3"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="expires_at">Expiration Date and Time</label>
+            <input type="datetime-local" id="expires_at" name="expires_at" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="options">Poll Options</label>
+            <div class="options-container" id="options-container">
+                <div class="option-input">
+                    <input type="text" placeholder="Option 1" class="option-field">
+                </div>
+                <div class="option-input">
+                    <input type="text" placeholder="Option 2" class="option-field">
+                </div>
+            </div>
+            <button type="button" id="add-option" class="btn btn-secondary">Add Option</button>
+            <button type="button" id="add-date-option" class="btn btn-secondary">Add Date Option</button>
+            <input type="hidden" id="options" name="options" value="">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Poll</button>
+            <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const optionsContainer = document.getElementById('options-container');
+        const addOptionBtn = document.getElementById('add-option');
+        const addDateOptionBtn = document.getElementById('add-date-option');
+        const optionsField = document.getElementById('options');
+        const form = document.querySelector('form');
+        
+        // Function to add a new text option
+        addOptionBtn.addEventListener('click', function() {
+            const optionCount = optionsContainer.children.length + 1;
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-input';
+            optionDiv.innerHTML = `
+                <input type="text" placeholder="Option ${optionCount}" class="option-field">
+                <button type="button" class="remove-option">×</button>
+            `;
+            optionsContainer.appendChild(optionDiv);
+            
+            // Add event listener to the remove button
+            const removeBtn = optionDiv.querySelector('.remove-option');
+            removeBtn.addEventListener('click', function() {
+                optionsContainer.removeChild(optionDiv);
+            });
+        });
+        
+        // Function to add a new date option
+        addDateOptionBtn.addEventListener('click', function() {
+            const optionCount = optionsContainer.children.length + 1;
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-input date-option';
+            optionDiv.innerHTML = `
+                <input type="datetime-local" class="option-field date-field">
+                <button type="button" class="remove-option">×</button>
+            `;
+            optionsContainer.appendChild(optionDiv);
+            
+            // Add event listener to the remove button
+            const removeBtn = optionDiv.querySelector('.remove-option');
+            removeBtn.addEventListener('click', function() {
+                optionsContainer.removeChild(optionDiv);
+            });
+        });
+        
+        // Function to collect all options before form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const optionFields = document.querySelectorAll('.option-field');
+            const optionsArray = [];
+            
+            optionFields.forEach(function(field) {
+                if (field.value.trim() !== '') {
+                    optionsArray.push(field.value.trim());
+                }
+            });
+            
+            if (optionsArray.length < 2) {
+                alert('Please add at least two options for the poll.');
+                return;
+            }
+            
+            optionsField.value = optionsArray.join(',');
+            form.submit();
+        });
+    });
+</script>
+{% endblock %}

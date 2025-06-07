@@ -1,0 +1,116 @@
+{% extends "base" %}
+
+{% block title %}{{ poll.title }} - Platform Engineering Game Night{% endblock %}
+
+{% block content %}
+<div class="poll-detail">
+    <h2>{{ poll.title }}</h2>
+    
+    {% if poll.description %}
+    <p class="poll-description">{{ poll.description }}</p>
+    {% endif %}
+    
+    <div class="poll-meta">
+        <span class="poll-creator">Created by: {{ poll.creator_username }}</span>
+        <span class="poll-expires">
+            {% if poll.is_expired %}
+                Expired: {{ poll.expires_at | date(format="%B %d, %Y at %H:%M") }}
+            {% else %}
+                Expires: {{ poll.expires_at | date(format="%B %d, %Y at %H:%M") }}
+            {% endif %}
+        </span>
+        <span class="poll-status status-{{ poll.is_expired | ternary('expired', 'active') }}">
+            {{ poll.is_expired | ternary('Expired', 'Active') }}
+        </span>
+    </div>
+    
+    <div class="poll-options">
+        <h3>Options</h3>
+        
+        {% if not poll.is_expired %}
+        <form action="/polls/{{ poll.id }}/vote" method="post" id="vote-form">
+        {% endif %}
+        
+        <div class="options-list">
+            {% for option in poll.options %}
+            <div class="option-item {{ option.is_voted | ternary('voted', '') }}">
+                {% if not poll.is_expired %}
+                <button type="submit" name="option_id" value="{{ option.id }}" class="vote-button {{ option.is_voted | ternary('voted', '') }}">
+                    {% if option.is_voted %}
+                    ✓
+                    {% else %}
+                    Vote
+                    {% endif %}
+                </button>
+                {% endif %}
+                
+                <div class="option-content">
+                    {% if option.is_date %}
+                    <span class="option-text date-option">{{ option.date_time | date(format="%B %d, %Y at %H:%M") }}</span>
+                    {% else %}
+                    <span class="option-text">{{ option.text }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="vote-results">
+                    <div class="vote-bar" style="width: {{ poll.total_votes > 0 ? (option.vote_count / poll.total_votes * 100) : 0 }}%"></div>
+                    <span class="vote-count">{{ option.vote_count }} vote{{ option.vote_count != 1 ? 's' : '' }}</span>
+                    {% if poll.total_votes > 0 %}
+                    <span class="vote-percentage">{{ (option.vote_count / poll.total_votes * 100) | round(1) }}%</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if not poll.is_expired %}
+        </form>
+        {% endif %}
+    </div>
+    
+    <div class="poll-summary">
+        <h3>Results</h3>
+        <p>Total votes: {{ poll.total_votes }}</p>
+        
+        {% if poll.total_votes > 0 %}
+        <div class="results-chart">
+            {% for option in poll.options %}
+            <div class="chart-item">
+                <div class="chart-label">
+                    {% if option.is_date %}
+                    {{ option.date_time | date(format="%b %d, %Y") }}
+                    {% else %}
+                    {{ option.text | truncate(length=20) }}
+                    {% endif %}
+                </div>
+                <div class="chart-bar-container">
+                    <div class="chart-bar" style="width: {{ (option.vote_count / poll.total_votes * 100) | round }}%"></div>
+                    <span class="chart-value">{{ option.vote_count }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>No votes yet.</p>
+        {% endif %}
+    </div>
+    
+    <div class="poll-actions">
+        <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+        {% if not poll.is_expired %}
+        <a href="/polls" class="btn btn-primary">View All Polls</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh the page every 30 seconds to show live results
+    {% if not poll.is_expired %}
+    setTimeout(function() {
+        window.location.reload();
+    }, 30000);
+    {% endif %}
+</script>
+{% endblock %}

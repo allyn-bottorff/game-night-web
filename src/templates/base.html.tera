@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title }}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Platform Engineering Game Night</h1>
+            {% if user %}
+            <nav>
+                <ul>
+                    <li><a href="/dashboard">Dashboard</a></li>
+                    <li><a href="/polls">Polls</a></li>
+                    <li><a href="/polls/create">Create Poll</a></li>
+                    {% if user.is_admin %}
+                    <li><a href="/admin/users">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="/logout">Logout ({{ user.username }})</a></li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container">
+        {% if flash %}
+        <div class="flash-message flash-{{ flash.0 }}">
+            {{ flash.1 }}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; {{ now() | date(format="%Y") }} Platform Engineering Game Night</p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
