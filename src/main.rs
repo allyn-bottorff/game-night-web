@@ -35,6 +35,8 @@ fn rocket() -> _ {
                 create_poll_page,
                 create_poll_post,
                 vote_on_poll,
+                profile,
+                change_password,
                 admin_users,
                 add_user_page,
                 add_user_post,

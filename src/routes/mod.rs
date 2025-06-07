@@ -11,7 +11,7 @@ use sqlx::SqlitePool;
 use crate::auth::{AdminUser, AuthenticatedUser};
 use crate::controllers::{polls, users, metrics};
 use crate::models::poll::{NewPollForm, VoteForm};
-use crate::models::user::{LoginForm, NewUserForm};
+use crate::models::user::{LoginForm, NewUserForm, ChangePasswordForm};
 
 // Public routes
 
@@ -200,6 +200,40 @@ pub async fn vote_on_poll(
             format!("Failed to cast vote: {}", err),
         )),
     }
+}
+
+// User Profile routes
+
+#[get("/profile")]
+pub async fn profile(
+    user: AuthenticatedUser,
+    pool: &State<SqlitePool>,
+    flash: Option<rocket::request::FlashMessage<'_>>,
+) -> Result<Template, Status> {
+    // Get user statistics
+    let (polls_created, votes_cast) = users::get_user_stats(pool, user.id)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
+    Ok(Template::render(
+        "profile",
+        context! {
+            title: "User Profile - Platform Engineering Game Night",
+            user: user.user,
+            polls_created: polls_created,
+            votes_cast: votes_cast,
+            flash: flash.map(|msg| (msg.kind().to_string(), msg.message().to_string())),
+        },
+    ))
+}
+
+#[post("/profile/password", data = "<form>")]
+pub async fn change_password(
+    user: AuthenticatedUser,
+    form: Form<ChangePasswordForm>,
+    pool: &State<SqlitePool>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    users::change_password(pool, user.id, &form).await
 }
 
 // Admin routes

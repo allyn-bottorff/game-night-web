@@ -1,0 +1,51 @@
+{% extends "base" %}
+
+{% block title %}User Profile - Platform Engineering Game Night{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <h2>User Profile</h2>
+    
+    <div class="profile-info">
+        <h3>Account Information</h3>
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Role:</strong> {% if user.is_admin %}Administrator{% else %}User{% endif %}</p>
+        <p><strong>Member Since:</strong> {{ user.created_at | date(format="%B %d, %Y") }}</p>
+    </div>
+    
+    <div class="change-password-section">
+        <h3>Change Password</h3>
+        
+        <form action="/profile/password" method="post">
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Update Password</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="user-activity">
+        <h3>Your Activity</h3>
+        <p><strong>Polls Created:</strong> {{ polls_created }}</p>
+        <p><strong>Votes Cast:</strong> {{ votes_cast }}</p>
+    </div>
+    
+    <div class="action-links">
+        <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

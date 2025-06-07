@@ -564,6 +564,55 @@ footer {
   color: var(--secondary-color);
 }
 
+/* Profile Page */
+.profile-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.profile-container h2 {
+  margin-bottom: 1.5rem;
+  color: var(--secondary-color);
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.75rem;
+}
+
+.profile-info, .change-password-section, .user-activity {
+  margin-bottom: 2.5rem;
+}
+
+.profile-info h3, .change-password-section h3, .user-activity h3 {
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+.profile-info p {
+  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+}
+
+.profile-info strong, .user-activity strong {
+  font-weight: 600;
+}
+
+.user-activity p {
+  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+}
+
+.action-links {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   .polls-grid {

@@ -27,6 +27,13 @@ pub struct NewUserForm {
     pub is_admin: bool,
 }
 
+#[derive(Debug, FromForm, Deserialize)]
+pub struct ChangePasswordForm {
+    pub current_password: String,
+    pub new_password: String,
+    pub confirm_password: String,
+}
+
 impl User {
     pub fn new(id: i64, username: String, password_hash: String, is_admin: bool, created_at: DateTime<Utc>) -> Self {
         Self {

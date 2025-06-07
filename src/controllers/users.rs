@@ -4,7 +4,7 @@ use rocket::uri;
 use sqlx::SqlitePool;
 use log::{info, error};
 
-use crate::models::user::{User, LoginForm, NewUserForm};
+use crate::models::user::{User, LoginForm, NewUserForm, ChangePasswordForm};
 use crate::auth::{login_user, set_login_cookie, clear_login_cookie};
 
 // Attempt to login a user
@@ -123,6 +123,109 @@ pub async fn add_user_controller(
             Err(Flash::error(
                 Redirect::to(uri!(crate::routes::add_user_page)),
                 "Error creating user account.",
+            ))
+        }
+    }
+}
+
+// Get user profile statistics
+pub async fn get_user_stats(
+    pool: &SqlitePool,
+    user_id: i64,
+) -> Result<(i64, i64), sqlx::Error> {
+    // Get count of polls created by user
+    let polls_created = sqlx::query_scalar("SELECT COUNT(*) FROM polls WHERE creator_id = ?")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
+    
+    // Get count of votes cast by user
+    let votes_cast = sqlx::query_scalar("SELECT COUNT(*) FROM votes WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
+    
+    Ok((polls_created, votes_cast))
+}
+
+// Change user password
+pub async fn change_password(
+    pool: &SqlitePool,
+    user_id: i64,
+    form: &ChangePasswordForm,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    // Verify form data
+    if form.new_password.trim().is_empty() {
+        return Err(Flash::error(
+            Redirect::to(uri!(crate::routes::profile)),
+            "New password cannot be empty.",
+        ));
+    }
+    
+    if form.new_password != form.confirm_password {
+        return Err(Flash::error(
+            Redirect::to(uri!(crate::routes::profile)),
+            "New passwords do not match.",
+        ));
+    }
+    
+    // Get current user data
+    let user = match sqlx::query_as::<_, User>(
+        "SELECT id, username, password_hash, is_admin, created_at FROM users WHERE id = ?"
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await {
+        Ok(user) => user,
+        Err(err) => {
+            error!("Database error fetching user: {}", err);
+            return Err(Flash::error(
+                Redirect::to(uri!(crate::routes::profile)),
+                "Error retrieving user account.",
+            ));
+        }
+    };
+    
+    // Verify current password
+    if !user.verify_password(&form.current_password) {
+        return Err(Flash::error(
+            Redirect::to(uri!(crate::routes::profile)),
+            "Current password is incorrect.",
+        ));
+    }
+    
+    // Hash the new password
+    let password_hash = match User::hash_password(&form.new_password) {
+        Ok(hash) => hash,
+        Err(err) => {
+            error!("Error hashing password: {}", err);
+            return Err(Flash::error(
+                Redirect::to(uri!(crate::routes::profile)),
+                "Error updating password.",
+            ));
+        }
+    };
+    
+    // Update the password
+    let result = sqlx::query("UPDATE users SET password_hash = ? WHERE id = ?")
+        .bind(&password_hash)
+        .bind(user_id)
+        .execute(pool)
+        .await;
+    
+    match result {
+        Ok(_) => {
+            info!("Password updated for user ID: {}", user_id);
+            Ok(Flash::success(
+                Redirect::to(uri!(crate::routes::profile)),
+                "Your password has been updated successfully.",
+            ))
+        }
+        Err(err) => {
+            error!("Error updating password: {}", err);
+            Err(Flash::error(
+                Redirect::to(uri!(crate::routes::profile)),
+                "Error updating password.",
             ))
         }
     }

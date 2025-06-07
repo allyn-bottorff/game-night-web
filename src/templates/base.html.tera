@@ -17,6 +17,7 @@
                     <li><a href="/dashboard">Dashboard</a></li>
                     <li><a href="/polls">Polls</a></li>
                     <li><a href="/polls/create">Create Poll</a></li>
+                    <li><a href="/profile">My Profile</a></li>
                     {% if user.is_admin %}
                     <li><a href="/admin/users">Manage Users</a></li>
                     {% endif %}
