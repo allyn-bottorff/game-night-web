@@ -50,5 +50,5 @@ CREATE INDEX IF NOT EXISTS idx_votes_option ON votes(option_id);
 
 -- Insert initial admin user (password is 'admin')
 INSERT INTO users (username, password_hash, is_admin) 
-VALUES ('admin', '$2b$12$1FbQ5GWU3KDJKs8h/SkS1eT/dyTJFLiJuQ4GcFyDTVcHMq3SZdAl.', 1)
+VALUES ('admin', '$2b$12$BX0YV17r4MKqT2nCuPLCOOh76CN8uBALR2z0xnUu1CU.Rj.p5Oj0a', 1)
 ON CONFLICT(username) DO NOTHING;

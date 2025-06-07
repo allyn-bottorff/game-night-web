@@ -9,15 +9,33 @@ pub struct DbConn(pub sqlx::pool::PoolConnection<sqlx::Sqlite>);
 
 /// Initialize the SQLite database
 pub async fn init_pool() -> SqlitePool {
-    let database_url =
-        env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:game_night.db".to_string());
-
-    SqlitePoolOptions::new()
+    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:game_night.db".to_string());
+    
+    // If the path doesn't include a directory separator, prepend "./" to make it relative to current dir
+    let database_url = if !database_url.contains('/') && !database_url.contains('\\') && database_url.starts_with("sqlite:") {
+        format!("sqlite:./{}", &database_url[7..])
+    } else {
+        database_url
+    };
+    
+    log::info!("Connecting to database at: {}", database_url);
+    
+    let pool = SqlitePoolOptions::new()
         .max_connections(5)
         .acquire_timeout(Duration::from_secs(3))
         .connect(&database_url)
-        .await
-        .expect("Failed to connect to SQLite database")
+        .await;
+        
+    match pool {
+        Ok(pool) => {
+            log::info!("Successfully connected to SQLite database");
+            pool
+        },
+        Err(err) => {
+            log::error!("Failed to connect to SQLite database: {}", err);
+            panic!("Failed to connect to SQLite database: {}", err);
+        }
+    }
 }
 
 /// Database initialization hook for Rocket

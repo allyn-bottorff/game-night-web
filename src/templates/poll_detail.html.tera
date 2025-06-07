@@ -19,8 +19,8 @@
                 Expires: {{ poll.expires_at | date(format="%B %d, %Y at %H:%M") }}
             {% endif %}
         </span>
-        <span class="poll-status status-{{ poll.is_expired | ternary('expired', 'active') }}">
-            {{ poll.is_expired | ternary('Expired', 'Active') }}
+        <span class="poll-status status-{% if poll.is_expired %}expired{% else %}active{% endif %}">
+            {% if poll.is_expired %}Expired{% else %}Active{% endif %}
         </span>
     </div>
     
@@ -33,9 +33,9 @@
         
         <div class="options-list">
             {% for option in poll.options %}
-            <div class="option-item {{ option.is_voted | ternary('voted', '') }}">
+            <div class="option-item {% if option.is_voted %}voted{% endif %}">
                 {% if not poll.is_expired %}
-                <button type="submit" name="option_id" value="{{ option.id }}" class="vote-button {{ option.is_voted | ternary('voted', '') }}">
+                <button type="submit" name="option_id" value="{{ option.id }}" class="vote-button {% if option.is_voted %}voted{% endif %}">
                     {% if option.is_voted %}
                     ✓
                     {% else %}
@@ -53,10 +53,10 @@
                 </div>
                 
                 <div class="vote-results">
-                    <div class="vote-bar" style="width: {{ poll.total_votes > 0 ? (option.vote_count / poll.total_votes * 100) : 0 }}%"></div>
-                    <span class="vote-count">{{ option.vote_count }} vote{{ option.vote_count != 1 ? 's' : '' }}</span>
+                    <div class="vote-bar" style="width: {% if poll.total_votes > 0 %}{{ (option.vote_count / poll.total_votes * 100) }}{% else %}0{% endif %}%"></div>
+                    <span class="vote-count">{{ option.vote_count }} vote{% if option.vote_count != 1 %}s{% endif %}</span>
                     {% if poll.total_votes > 0 %}
-                    <span class="vote-percentage">{{ (option.vote_count / poll.total_votes * 100) | round(1) }}%</span>
+                    <span class="vote-percentage">{{ (option.vote_count / poll.total_votes * 100) | round }}%</span>
                     {% endif %}
                 </div>
             </div>

@@ -25,8 +25,8 @@
                     <td>{{ user.username }}</td>
                     <td>{{ user.created_at | date(format="%B %d, %Y") }}</td>
                     <td>
-                        <span class="role-badge {{ user.is_admin | ternary('admin', 'user') }}">
-                            {{ user.is_admin | ternary('Admin', 'User') }}
+                        <span class="role-badge {% if user.is_admin %}admin{% else %}user{% endif %}">
+                            {% if user.is_admin %}Admin{% else %}User{% endif %}
                         </span>
                     </td>
                 </tr>
