@@ -1,6 +1,5 @@
 use rocket::http::{Cookie, CookieJar, Status};
 use rocket::request::{FromRequest, Outcome, Request};
-use rocket::response::{Flash, Redirect};
 use rocket::serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::ops::Deref;
@@ -59,12 +58,12 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
             match user_result {
                 Ok(user) => Outcome::Success(AuthenticatedUser { user }),
                 Err(_) => {
-                    cookies.remove_private(Cookie::named("user_id"));
-                    Outcome::Failure((Status::Unauthorized, ()))
+                    cookies.remove_private(Cookie::from("user_id"));
+                    Outcome::Error((Status::Unauthorized, ()))
                 }
             }
         } else {
-            Outcome::Failure((Status::Unauthorized, ()))
+            Outcome::Error((Status::Unauthorized, ()))
         }
     }
 }
@@ -77,10 +76,10 @@ impl<'r> FromRequest<'r> for AdminUser {
         let user_outcome = request.guard::<AuthenticatedUser>().await;
 
         match user_outcome {
-            Outcome::Success(auth_user) if auth_user.is_admin => {
-                Outcome::Success(AdminUser { user: auth_user.user })
-            }
-            _ => Outcome::Failure((Status::Forbidden, ())),
+            Outcome::Success(auth_user) if auth_user.is_admin => Outcome::Success(AdminUser {
+                user: auth_user.user,
+            }),
+            _ => Outcome::Error((Status::Forbidden, ())),
         }
     }
 }
@@ -91,7 +90,7 @@ pub fn set_login_cookie(cookies: &CookieJar<'_>, user_id: i64) {
 }
 
 pub fn clear_login_cookie(cookies: &CookieJar<'_>) {
-    cookies.remove_private(Cookie::named("user_id"));
+    cookies.remove_private(Cookie::from("user_id"));
 }
 
 // Login handler with database verification
