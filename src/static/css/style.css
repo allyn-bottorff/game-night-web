@@ -534,6 +534,20 @@ footer {
   color: var(--secondary-color);
 }
 
+.role-toggle-form {
+  display: inline-block;
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  color: white;
+}
+
 .help-text {
   margin-top: 2rem;
   padding-top: 1.5rem;

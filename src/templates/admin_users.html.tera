@@ -17,6 +17,7 @@
                     <th>Username</th>
                     <th>Created</th>
                     <th>Role</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -29,6 +30,15 @@
                             {% if user.is_admin %}Admin{% else %}User{% endif %}
                         </span>
                     </td>
+                    <td>
+                        <form action="/admin/users/role" method="post" class="role-toggle-form">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <input type="hidden" name="set_admin" value="{% if user.is_admin %}false{% else %}true{% endif %}">
+                            <button type="submit" class="btn btn-small {% if user.is_admin %}btn-warning{% else %}btn-primary{% endif %}">
+                                {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                            </button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -36,11 +46,12 @@
     </div>
     
     <div class="help-text">
-        <h3>About User Roles</h3>
-        <ul>
-            <li><strong>Admin:</strong> Can create polls, vote on polls, and add new users</li>
-            <li><strong>User:</strong> Can create polls and vote on polls</li>
-        </ul>
-    </div>
+            <h3>About User Roles</h3>
+            <ul>
+                <li><strong>Admin:</strong> Can create polls, vote on polls, add new users, and manage user roles</li>
+                <li><strong>User:</strong> Can create polls and vote on polls</li>
+            </ul>
+            <p>Use the action buttons to change a user's role. Changing roles takes effect immediately.</p>
+        </div>
 </div>
 {% endblock %}

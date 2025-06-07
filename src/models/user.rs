@@ -34,6 +34,12 @@ pub struct ChangePasswordForm {
     pub confirm_password: String,
 }
 
+#[derive(Debug, FromForm, Deserialize)]
+pub struct ToggleRoleForm {
+    pub user_id: i64,
+    pub set_admin: bool,
+}
+
 impl User {
     pub fn new(id: i64, username: String, password_hash: String, is_admin: bool, created_at: DateTime<Utc>) -> Self {
         Self {

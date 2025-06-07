@@ -11,7 +11,7 @@ use sqlx::SqlitePool;
 use crate::auth::{AdminUser, AuthenticatedUser};
 use crate::controllers::{polls, users, metrics};
 use crate::models::poll::{NewPollForm, VoteForm};
-use crate::models::user::{LoginForm, NewUserForm, ChangePasswordForm};
+use crate::models::user::{LoginForm, NewUserForm, ChangePasswordForm, ToggleRoleForm};
 
 // Public routes
 
@@ -257,6 +257,15 @@ pub async fn admin_users(
             flash: flash.map(|msg| (msg.kind().to_string(), msg.message().to_string())),
         },
     ))
+}
+
+#[post("/admin/users/role", data = "<form>")]
+pub async fn toggle_user_role(
+    admin: AdminUser,
+    form: Form<ToggleRoleForm>,
+    pool: &State<SqlitePool>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    users::toggle_user_role(pool, form.user_id, form.set_admin, admin.id).await
 }
 
 #[get("/admin/users/add")]

@@ -239,3 +239,72 @@ pub async fn get_all_users(pool: &SqlitePool) -> Result<Vec<User>, sqlx::Error> 
     .fetch_all(pool)
     .await
 }
+
+// Toggle admin role for a user
+pub async fn toggle_user_role(
+    pool: &SqlitePool,
+    user_id: i64,
+    set_admin: bool,
+    admin_id: i64,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    // Don't allow users to change their own role
+    if user_id == admin_id {
+        return Err(Flash::error(
+            Redirect::to(uri!(crate::routes::admin_users)),
+            "You cannot change your own role.",
+        ));
+    }
+    
+    // Check if user exists
+    let user_exists = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)",
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await;
+    
+    match user_exists {
+        Ok(true) => {
+            // Update user role
+            let result = sqlx::query(
+                "UPDATE users SET is_admin = ? WHERE id = ?",
+            )
+            .bind(set_admin)
+            .bind(user_id)
+            .execute(pool)
+            .await;
+            
+            match result {
+                Ok(_) => {
+                    let role_str = if set_admin { "admin" } else { "user" };
+                    info!("User role updated: user_id={}, new_role={}", user_id, role_str);
+                    Ok(Flash::success(
+                        Redirect::to(uri!(crate::routes::admin_users)),
+                        format!("User role updated to {}.", role_str),
+                    ))
+                }
+                Err(err) => {
+                    error!("Database error updating role: {}", err);
+                    Err(Flash::error(
+                        Redirect::to(uri!(crate::routes::admin_users)),
+                        "Error updating user role.",
+                    ))
+                }
+            }
+        }
+        Ok(false) => {
+            error!("Attempted to change role for non-existent user: {}", user_id);
+            Err(Flash::error(
+                Redirect::to(uri!(crate::routes::admin_users)),
+                "User not found.",
+            ))
+        }
+        Err(err) => {
+            error!("Database error checking user: {}", err);
+            Err(Flash::error(
+                Redirect::to(uri!(crate::routes::admin_users)),
+                "Database error occurred.",
+            ))
+        }
+    }
+}

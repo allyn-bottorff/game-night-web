@@ -40,6 +40,7 @@ fn rocket() -> _ {
                 admin_users,
                 add_user_page,
                 add_user_post,
+                toggle_user_role,
                 metrics_endpoint
             ],
         )
