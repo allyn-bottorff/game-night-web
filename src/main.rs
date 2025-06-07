@@ -13,7 +13,7 @@ mod routes;
 
 use routes::*;
 
-#[launch]
+#[rocket::launch]
 fn rocket() -> _ {
     // Load environment variables
     dotenv().ok();
@@ -24,7 +24,7 @@ fn rocket() -> _ {
     rocket::build()
         .mount(
             "/",
-            routes![
+            rocket::routes![
                 index,
                 login_page,
                 login_post,

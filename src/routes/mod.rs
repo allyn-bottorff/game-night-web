@@ -1,17 +1,17 @@
-#[macro_use]
-extern crate rocket;
-
-use rocket::response::{Flash, Redirect};
-use rocket::http::{Cookie, CookieJar, Status};
-use rocket::form::Form;
 use rocket::State;
+use rocket::form::Form;
+use rocket::get;
+use rocket::http::{Cookie, CookieJar, Status};
+use rocket::post;
+use rocket::response::{Flash, Redirect};
+use rocket::uri;
 use rocket_dyn_templates::{Template, context};
 use sqlx::SqlitePool;
 
-use crate::auth::{AuthenticatedUser, AdminUser};
+use crate::auth::{AdminUser, AuthenticatedUser};
 use crate::controllers::*;
-use crate::models::user::{LoginForm, NewUserForm};
 use crate::models::poll::{NewPollForm, VoteForm};
+use crate::models::user::{LoginForm, NewUserForm};
 
 // Public routes
 
@@ -22,10 +22,13 @@ pub async fn index() -> Redirect {
 
 #[get("/login")]
 pub async fn login_page(flash: Option<rocket::request::FlashMessage<'_>>) -> Template {
-    Template::render("login", context! {
-        title: "Login - Platform Engineering Game Night",
-        flash: flash.map(|msg| (msg.kind().to_string(), msg.message().to_string())),
-    })
+    Template::render(
+        "login",
+        context! {
+            title: "Login - Platform Engineering Game Night",
+            flash: flash.map(|msg| (msg.kind().to_string(), msg.message().to_string())),
+        },
+    )
 }
 
 #[post("/login", data = "<form>")]
@@ -35,14 +38,14 @@ pub async fn login_post(
     pool: &State<SqlitePool>,
 ) -> Result<Redirect, Flash<Redirect>> {
     metrics::increment_login_attempt();
-    
+
     let result = users::login_controller(pool, &form, cookies).await;
-    
+
     match &result {
         Ok(_) => metrics::increment_successful_login(),
         Err(_) => metrics::increment_failed_login(),
     }
-    
+
     result
 }
 
@@ -80,10 +83,7 @@ pub async fn dashboard(
 }
 
 #[get("/polls")]
-pub async fn polls(
-    user: AuthenticatedUser,
-    pool: &State<SqlitePool>,
-) -> Result<Template, Status> {
+pub async fn polls(user: AuthenticatedUser, pool: &State<SqlitePool>) -> Result<Template, Status> {
     let active_polls = polls::get_active_polls(pool)
         .await
         .map_err(|_| Status::InternalServerError)?;
@@ -158,12 +158,10 @@ pub async fn create_poll_post(
 ) -> Result<Redirect, Flash<Redirect>> {
     match polls::create_poll(pool, &form, user.id).await {
         Ok(poll_id) => Ok(Redirect::to(uri!(poll_detail(poll_id)))),
-        Err(err) => {
-            Err(Flash::error(
-                Redirect::to(uri!(create_poll_page)),
-                format!("Failed to create poll: {}", err),
-            ))
-        }
+        Err(err) => Err(Flash::error(
+            Redirect::to(uri!(create_poll_page)),
+            format!("Failed to create poll: {}", err),
+        )),
     }
 }
 
@@ -194,12 +192,10 @@ pub async fn vote_on_poll(
 
     match polls::vote_on_poll(pool, form.option_id, user.id).await {
         Ok(_) => Ok(Redirect::to(uri!(poll_detail(poll_id)))),
-        Err(err) => {
-            Err(Flash::error(
-                Redirect::to(uri!(poll_detail(poll_id))),
-                format!("Failed to cast vote: {}", err),
-            ))
-        }
+        Err(err) => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            format!("Failed to cast vote: {}", err),
+        )),
     }
 }
 
