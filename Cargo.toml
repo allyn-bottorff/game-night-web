@@ -4,10 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rocket = { version = "0.5.0", features = ["json", "secrets"] }
-rocket_dyn_templates = { version = "0.1.0", features = ["handlebars", "tera"] }
-rocket_csrf = "0.1.0"
-sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "sqlite", "chrono", "uuid", "migrate"] }
+rocket = { version = "0.5.1", features = ["json", "secrets"] }
+# rocket_dyn_templates = { version = "0.1.0", features = ["handlebars", "tera"] }
+# rocket_csrf = "0.1.0"
+sqlx = { version = "0.7.3", features = [
+    "runtime-tokio-native-tls",
+    "sqlite",
+    "chrono",
+    "uuid",
+    "migrate",
+] }
 tokio = { version = "1.33.0", features = ["full"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
@@ -21,3 +27,4 @@ log = "0.4.20"
 env_logger = "0.10.1"
 dotenv = "0.15.0"
 time = "0.3.30"
+rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }
