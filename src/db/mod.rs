@@ -52,7 +52,7 @@ impl<'r> rocket::request::FromRequest<'r> for DbConn {
         match pool.acquire().await {
             Ok(conn) => rocket::request::Outcome::Success(DbConn(conn)),
             Err(_) => {
-                rocket::request::Outcome::Failure((rocket::http::Status::ServiceUnavailable, ()))
+                rocket::request::Outcome::Error((rocket::http::Status::ServiceUnavailable, ()))
             }
         }
     }
