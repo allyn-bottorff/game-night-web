@@ -25,4 +25,5 @@ node_modules/
 
 # Added by cargo
 
+/game-night-web/target
 /target

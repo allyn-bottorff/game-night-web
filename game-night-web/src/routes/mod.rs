@@ -1,11 +1,11 @@
-use rocket::State;
 use rocket::form::Form;
 use rocket::get;
 use rocket::http::{CookieJar, Status};
 use rocket::post;
 use rocket::response::{Flash, Redirect};
 use rocket::uri;
-use rocket_dyn_templates::{Template, context};
+use rocket::State;
+use rocket_dyn_templates::{context, Template};
 use sqlx::SqlitePool;
 
 use crate::auth::{AdminUser, AuthenticatedUser};
@@ -17,7 +17,7 @@ use crate::models::user::{ChangePasswordForm, LoginForm, NewUserForm, ToggleRole
 
 #[get("/")]
 pub async fn index() -> Redirect {
-    Redirect::to(uri!(dashboard))
+    Redirect::to(uri!(login_page))
 }
 
 #[get("/login")]

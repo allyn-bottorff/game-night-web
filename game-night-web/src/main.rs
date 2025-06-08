@@ -53,6 +53,13 @@ fn rocket() -> _ {
                 .run(&pool)
                 .await
                 .expect("failed to run database migrations");
+
+            // Initialize default admin user if needed
+            if let Err(e) = db::init_default_admin(&pool).await {
+                log::error!("Failed to initialize default admin user: {}", e);
+                panic!("Failed to initialize default admin user: {}", e);
+            }
+
             Ok(rocket.manage(pool))
         }))
 }

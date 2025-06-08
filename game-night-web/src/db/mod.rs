@@ -1,6 +1,7 @@
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use std::env;
 use std::time::Duration;
+use crate::models::user::User;
 
 pub mod schema;
 
@@ -11,22 +12,23 @@ pub async fn init_pool() -> SqlitePool {
     let database_url =
         env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:game_night.db".to_string());
 
-    // If the path doesn't include a directory separator, prepend "./" to make it relative to current dir
-    let database_url = if !database_url.contains('/')
-        && !database_url.contains('\\')
-        && database_url.starts_with("sqlite:")
-    {
-        format!("sqlite:./{}", &database_url[7..])
+    // Extract the database filename from the URL
+    let db_filename = if database_url.starts_with("sqlite:") {
+        &database_url[7..]
     } else {
-        database_url
+        "game_night.db"
     };
 
-    log::info!("Connecting to database at: {}", database_url);
+    log::info!("Connecting to database at: {}", db_filename);
 
     let pool = SqlitePoolOptions::new()
         .max_connections(5)
         .acquire_timeout(Duration::from_secs(3))
-        .connect(&database_url)
+        .connect_with(
+            sqlx::sqlite::SqliteConnectOptions::new()
+                .filename(db_filename)
+                .create_if_missing(true)
+        )
         .await;
 
     match pool {
@@ -39,6 +41,42 @@ pub async fn init_pool() -> SqlitePool {
             panic!("Failed to connect to SQLite database: {}", err);
         }
     }
+}
+
+/// Initialize database with default admin user if no admin exists
+pub async fn init_default_admin(pool: &SqlitePool) -> Result<(), sqlx::Error> {
+    // Check if any admin users exist
+    let admin_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE is_admin = 1")
+        .fetch_one(pool)
+        .await?;
+
+    if admin_count == 0 {
+        log::info!("No admin users found. Creating default admin user...");
+        
+        // Create default admin user with password 'admin'
+        let default_password = "admin";
+        let password_hash = match User::hash_password(default_password) {
+            Ok(hash) => hash,
+            Err(err) => {
+                log::error!("Failed to hash default admin password: {}", err);
+                return Err(sqlx::Error::Protocol("Failed to hash password".into()));
+            }
+        };
+
+        sqlx::query(
+            "INSERT INTO users (username, password_hash, is_admin) VALUES ('admin', ?, 1)"
+        )
+        .bind(&password_hash)
+        .execute(pool)
+        .await?;
+
+        log::info!("✅ Default admin user created successfully (username: 'admin', password: 'admin')");
+        log::warn!("⚠️  Please change the default admin password after first login!");
+    } else {
+        log::info!("Admin users already exist. Skipping default admin creation.");
+    }
+
+    Ok(())
 }
 
 // /// Database initialization hook for Rocket

@@ -48,7 +48,4 @@ CREATE INDEX IF NOT EXISTS idx_options_poll ON options(poll_id);
 CREATE INDEX IF NOT EXISTS idx_votes_user ON votes(user_id);
 CREATE INDEX IF NOT EXISTS idx_votes_option ON votes(option_id);
 
--- Insert initial admin user (password is 'admin')
-INSERT INTO users (username, password_hash, is_admin) 
-VALUES ('admin', '$2b$12$BX0YV17r4MKqT2nCuPLCOOh76CN8uBALR2z0xnUu1CU.Rj.p5Oj0a', 1)
-ON CONFLICT(username) DO NOTHING;
+-- Initial admin user will be created by the application on startup if no admin users exist
