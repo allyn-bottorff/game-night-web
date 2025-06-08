@@ -1,10 +1,8 @@
 use lazy_static::lazy_static;
 use prometheus::{
-    register_int_counter, register_int_gauge, Encoder, IntCounter, IntGauge, TextEncoder,
+    Encoder, IntCounter, IntGauge, TextEncoder, register_int_counter, register_int_gauge,
 };
-use rocket::http::Status;
-use rocket::request::Request;
-use rocket::State;
+// use rocket::request::Request;
 use sqlx::SqlitePool;
 
 // Define the metrics we want to track
@@ -19,8 +17,11 @@ lazy_static! {
         register_int_gauge!("game_night_total_users", "Total number of registered users").unwrap();
     static ref LOGIN_ATTEMPTS: IntCounter =
         register_int_counter!("game_night_login_attempts", "Number of login attempts").unwrap();
-    static ref SUCCESSFUL_LOGINS: IntCounter =
-        register_int_counter!("game_night_successful_logins", "Number of successful logins").unwrap();
+    static ref SUCCESSFUL_LOGINS: IntCounter = register_int_counter!(
+        "game_night_successful_logins",
+        "Number of successful logins"
+    )
+    .unwrap();
     static ref FAILED_LOGINS: IntCounter =
         register_int_counter!("game_night_failed_logins", "Number of failed logins").unwrap();
     static ref API_REQUESTS: IntCounter =
@@ -30,11 +31,10 @@ lazy_static! {
 // Function to gather metrics from the database
 pub async fn update_metrics(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     // Get active polls count
-    let active_polls: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM polls WHERE expires_at > datetime('now')",
-    )
-    .fetch_one(pool)
-    .await?;
+    let active_polls: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM polls WHERE expires_at > datetime('now')")
+            .fetch_one(pool)
+            .await?;
     ACTIVE_POLLS.set(active_polls);
 
     // Get total polls count
@@ -74,9 +74,9 @@ pub fn increment_failed_login() {
 }
 
 // Increment the API requests counter
-pub fn increment_api_request() {
-    API_REQUESTS.inc();
-}
+// pub fn increment_api_request() {
+//     API_REQUESTS.inc();
+// }
 
 // Generate the metrics response
 pub async fn get_metrics(pool: &SqlitePool) -> String {
@@ -93,6 +93,6 @@ pub async fn get_metrics(pool: &SqlitePool) -> String {
 }
 
 // Middleware for tracking API requests
-pub fn track_request(_request: &Request) {
-    increment_api_request();
-}
+// pub fn track_request(_request: &Request) {
+//     increment_api_request();
+// }

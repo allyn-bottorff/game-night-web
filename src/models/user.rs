@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
+use rocket::form::FromForm;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use rocket::form::FromForm;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct User {
@@ -41,15 +41,15 @@ pub struct ToggleRoleForm {
 }
 
 impl User {
-    pub fn new(id: i64, username: String, password_hash: String, is_admin: bool, created_at: DateTime<Utc>) -> Self {
-        Self {
-            id,
-            username,
-            password_hash,
-            is_admin,
-            created_at,
-        }
-    }
+    // pub fn new(id: i64, username: String, password_hash: String, is_admin: bool, created_at: DateTime<Utc>) -> Self {
+    //     Self {
+    //         id,
+    //         username,
+    //         password_hash,
+    //         is_admin,
+    //         created_at,
+    //     }
+    // }
 
     pub fn verify_password(&self, password: &str) -> bool {
         bcrypt::verify(password, &self.password_hash).unwrap_or(false)

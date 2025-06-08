@@ -1,7 +1,7 @@
 use rocket::State;
 use rocket::form::Form;
 use rocket::get;
-use rocket::http::{Cookie, CookieJar, Status};
+use rocket::http::{CookieJar, Status};
 use rocket::post;
 use rocket::response::{Flash, Redirect};
 use rocket::uri;
@@ -9,9 +9,9 @@ use rocket_dyn_templates::{Template, context};
 use sqlx::SqlitePool;
 
 use crate::auth::{AdminUser, AuthenticatedUser};
-use crate::controllers::{polls, users, metrics};
+use crate::controllers::{polls, users};
 use crate::models::poll::{NewPollForm, VoteForm};
-use crate::models::user::{LoginForm, NewUserForm, ChangePasswordForm, ToggleRoleForm};
+use crate::models::user::{ChangePasswordForm, LoginForm, NewUserForm, ToggleRoleForm};
 
 // Public routes
 

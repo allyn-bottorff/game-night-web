@@ -1,13 +1,7 @@
-pub mod user;
 pub mod poll;
+pub mod user;
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-
-// Re-export models for easier access
-pub use self::user::User;
-pub use self::poll::{Poll, PollOption, Vote};
 
 // Common structures and enums
 #[derive(Debug, Serialize, Deserialize)]

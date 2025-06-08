@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
+use rocket::form::FromForm;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use rocket::form::FromForm;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Poll {
@@ -56,16 +56,16 @@ pub struct VoteForm {
     pub option_id: i64,
 }
 
-impl Poll {
-    pub fn is_active(&self) -> bool {
-        self.expires_at > Utc::now()
-    }
+// impl Poll {
+//     pub fn is_active(&self) -> bool {
+//         self.expires_at > Utc::now()
+//     }
 
-    pub fn get_status(&self) -> &'static str {
-        if self.is_active() {
-            "active"
-        } else {
-            "expired"
-        }
-    }
-}
+//     pub fn get_status(&self) -> &'static str {
+//         if self.is_active() {
+//             "active"
+//         } else {
+//             "expired"
+//         }
+//     }
+// }
