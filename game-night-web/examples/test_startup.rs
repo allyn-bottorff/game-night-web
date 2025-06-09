@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use game_night_web::db;
-use game_night_web::models::user::User;
+use game_night_web::models::User;
 use std::time::Duration;
 use tokio::time::sleep;
 
