@@ -26,7 +26,7 @@
                 </div>
                 <div class="poll-actions">
                     <a href="/polls/{{ poll.id }}" class="btn btn-primary">View Poll</a>
-                    {% if user.is_admin %}
+                    {% if user.is_admin or poll.creator_id == user.id %}
                     <form action="/polls/{{ poll.id }}/delete" method="post" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this poll? This action cannot be undone.');">
                         <button type="submit" class="btn btn-small btn-danger">Delete</button>
                     </form>
@@ -57,7 +57,7 @@
                 </div>
                 <div class="poll-actions">
                     <a href="/polls/{{ poll.id }}" class="btn btn-secondary">View Results</a>
-                    {% if user.is_admin %}
+                    {% if user.is_admin or poll.creator_id == user.id %}
                     <form action="/polls/{{ poll.id }}/delete" method="post" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this poll? This action cannot be undone.');">
                         <button type="submit" class="btn btn-small btn-danger">Delete</button>
                     </form>

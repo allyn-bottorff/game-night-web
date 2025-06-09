@@ -205,13 +205,17 @@ pub async fn vote_on_poll(
 #[post("/polls/<poll_id>/delete")]
 pub async fn delete_poll(
     poll_id: i64,
-    _admin: AdminUser,
+    user: AuthenticatedUser,
     pool: &State<SqlitePool>,
 ) -> Result<Flash<Redirect>, Flash<Redirect>> {
-    match polls::delete_poll(pool, poll_id).await {
+    match polls::delete_poll(pool, poll_id, user.id, user.is_admin).await {
         Ok(_) => Ok(Flash::success(
             Redirect::to(uri!(dashboard)),
             "Poll deleted successfully.",
+        )),
+        Err(sqlx::Error::RowNotFound) => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            "You don't have permission to delete this poll.",
         )),
         Err(err) => Err(Flash::error(
             Redirect::to(uri!(poll_detail(poll_id))),

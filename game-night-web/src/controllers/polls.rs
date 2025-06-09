@@ -213,8 +213,28 @@ pub async fn vote_on_poll(
 //     Ok(results)
 // }
 
-// Delete a poll (admin only)
-pub async fn delete_poll(pool: &SqlitePool, poll_id: i64) -> Result<(), sqlx::Error> {
+// Delete a poll (admin or poll creator)
+pub async fn delete_poll(pool: &SqlitePool, poll_id: i64, user_id: i64, is_admin: bool) -> Result<(), sqlx::Error> {
+    // First check if user has permission to delete this poll
+    if !is_admin {
+        let poll = sqlx::query_as::<_, crate::models::poll::Poll>(
+            "SELECT id, title, description, creator_id, created_at, expires_at FROM polls WHERE id = ?"
+        )
+        .bind(poll_id)
+        .fetch_optional(pool)
+        .await?;
+
+        match poll {
+            Some(poll) if poll.creator_id != user_id => {
+                return Err(sqlx::Error::RowNotFound);
+            }
+            None => {
+                return Err(sqlx::Error::RowNotFound);
+            }
+            _ => {} // User is the creator, proceed with deletion
+        }
+    }
+
     let mut tx = pool.begin().await?;
 
     // Delete all votes for this poll's options
@@ -239,7 +259,7 @@ pub async fn delete_poll(pool: &SqlitePool, poll_id: i64) -> Result<(), sqlx::Er
 
     tx.commit().await?;
 
-    info!("Poll {} deleted", poll_id);
+    info!("Poll {} deleted by user {}", poll_id, user_id);
     Ok(())
 }
 
@@ -271,6 +291,7 @@ pub fn format_poll_for_template(
         "id": poll.id,
         "title": poll.title,
         "description": poll.description,
+        "creator_id": poll.creator_id,
         "creator_username": poll.creator_username,
         "created_at": poll.created_at.to_rfc3339(),
         "expires_at": poll.expires_at.to_rfc3339(),
