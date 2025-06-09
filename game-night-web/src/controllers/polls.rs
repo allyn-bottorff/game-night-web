@@ -213,6 +213,36 @@ pub async fn vote_on_poll(
 //     Ok(results)
 // }
 
+// Delete a poll (admin only)
+pub async fn delete_poll(pool: &SqlitePool, poll_id: i64) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    // Delete all votes for this poll's options
+    sqlx::query(
+        "DELETE FROM votes WHERE option_id IN (SELECT id FROM options WHERE poll_id = ?)"
+    )
+    .bind(poll_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Delete all options for this poll
+    sqlx::query("DELETE FROM options WHERE poll_id = ?")
+        .bind(poll_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete the poll itself
+    sqlx::query("DELETE FROM polls WHERE id = ?")
+        .bind(poll_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    info!("Poll {} deleted", poll_id);
+    Ok(())
+}
+
 // Format poll data for template
 pub fn format_poll_for_template(
     poll: &PollWithCreator,

@@ -548,6 +548,27 @@ footer {
   color: white;
 }
 
+.btn-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.delete-form {
+  display: inline-block;
+  margin-left: 1rem;
+}
+
+.poll-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.poll-actions .delete-form {
+  margin-left: 0;
+}
+
 .help-text {
   margin-top: 2rem;
   padding-top: 1.5rem;

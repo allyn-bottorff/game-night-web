@@ -202,6 +202,24 @@ pub async fn vote_on_poll(
     }
 }
 
+#[post("/polls/<poll_id>/delete")]
+pub async fn delete_poll(
+    poll_id: i64,
+    _admin: AdminUser,
+    pool: &State<SqlitePool>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    match polls::delete_poll(pool, poll_id).await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(uri!(dashboard)),
+            "Poll deleted successfully.",
+        )),
+        Err(err) => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            format!("Failed to delete poll: {}", err),
+        )),
+    }
+}
+
 // User Profile routes
 
 #[get("/profile")]
