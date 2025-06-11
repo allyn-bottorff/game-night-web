@@ -45,24 +45,6 @@ openssl rand -base64 32
 
 . Update the `ROCKET_SECRET_KEY` in the `.env` file with the generated key.
 
-. Build and run the application:
-+
-[source,bash]
-----
-# Important: Make sure to run this command from the project root directory, not from src/
-cargo run
-----
-+
-Or use the provided run script which also resets the admin password automatically:
-+
-[source,bash]
-----
-./run.sh
-----
-+
-The run script will attempt to use either the Python or Bash reset script,
-depending on what's available on your system.
-
 . Open your browser and navigate to `http://localhost:8000`
 
 == Troubleshooting
@@ -193,6 +175,3 @@ cargo build --release
 
 The compiled binary will be available at `target/release/game-night-web`.
 
-== License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
