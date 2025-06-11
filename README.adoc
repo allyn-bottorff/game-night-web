@@ -1,6 +1,10 @@
-= Platform Engineering Game Night Web Application
+= Platform Engineering Game Night Polls
 
-A web application for creating and managing polls for game night events. This application is built using Rust with the Rocket framework as an MVC application.
+This is a for-fun project I'm using as a test for AI tooling.
+
+A web application for creating and managing polls for game night events. This
+application is built using Rust with the Rocket framework as an MVC
+application.
 
 == Features
 
@@ -14,7 +18,6 @@ A web application for creating and managing polls for game night events. This ap
 == Prerequisites
 
 * Rust and Cargo (latest stable version)
-* SQLite
 
 == Setup and Installation
 
@@ -57,7 +60,8 @@ Or use the provided run script which also resets the admin password automaticall
 ./run.sh
 ----
 +
-The run script will attempt to use either the Python or Bash reset script, depending on what's available on your system.
+The run script will attempt to use either the Python or Bash reset script,
+depending on what's available on your system.
 
 . Open your browser and navigate to `http://localhost:8000`
 
