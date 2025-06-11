@@ -1,7 +1,19 @@
+//! # Game Night Web Application
+//!
+//! A web application for managing game night polls and user voting.
+//! Built with Rocket framework and SQLite database.
+//!
+//! ## Features
+//! - User authentication with role-based access control
+//! - Poll creation and voting system
+//! - Admin user management
+//! - Session-based authentication
+//! - Prometheus metrics collection
+
 extern crate rocket;
 use dotenv::dotenv;
 use rocket::fairing::AdHoc;
-use rocket::fs::{FileServer, relative};
+use rocket::fs::{relative, FileServer};
 use rocket_dyn_templates::Template;
 use std::env;
 
@@ -13,6 +25,20 @@ mod routes;
 
 use routes::*;
 
+/// Main application entry point that configures and launches the Rocket web server.
+/// 
+/// This function:
+/// - Loads environment variables from .env file
+/// - Initializes logging
+/// - Sets up all HTTP routes
+/// - Configures static file serving
+/// - Attaches template engine
+/// - Initializes database connection pool
+/// - Runs database migrations
+/// - Creates default admin user if needed
+/// 
+/// # Returns
+/// A configured Rocket instance ready for launch
 #[rocket::launch]
 fn rocket() -> _ {
     // Load environment variables
@@ -32,6 +58,7 @@ fn rocket() -> _ {
                 dashboard,
                 get_polls,
                 poll_detail,
+                poll_voters,
                 create_poll_page,
                 create_poll_post,
                 vote_on_poll,

@@ -5,6 +5,9 @@ Cargo.lock
 # Environment
 .env
 
+# Python virtual environment
+.venv
+
 # Database
 *.db
 *.db-shm

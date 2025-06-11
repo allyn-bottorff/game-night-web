@@ -1,0 +1,359 @@
+{% extends "base" %}
+
+{% block title %}{{ voting_details.poll.title }} - Voters - Platform Engineering Game Night{% endblock %}
+
+{% block content %}
+<div class="poll-voters">
+    <div class="poll-header">
+        <h2>Who Voted: {{ voting_details.poll.title }}</h2>
+        
+        {% if voting_details.poll.description %}
+        <p class="poll-description">{{ voting_details.poll.description }}</p>
+        {% endif %}
+        
+        <div class="poll-meta">
+            <span class="poll-creator">Created by: {{ voting_details.poll.creator_username }}</span>
+            <span class="poll-expires">
+                {% if voting_details.poll.is_expired %}
+                    Expired: {{ voting_details.poll.expires_at | date(format="%B %d, %Y at %H:%M") }}
+                {% else %}
+                    Expires: {{ voting_details.poll.expires_at | date(format="%B %d, %Y at %H:%M") }}
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="voting-summary">
+        <h3>Voting Summary</h3>
+        <div class="summary-stats">
+            <div class="stat-item">
+                <span class="stat-number">{{ voting_details.total_voters }}</span>
+                <span class="stat-label">Unique Voters</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ voting_details.total_votes }}</span>
+                <span class="stat-label">Total Votes</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="options-voters">
+        <h3>Votes by Option</h3>
+        
+        {% for option in voting_details.options_with_voters %}
+        <div class="option-section">
+            <div class="option-header">
+                <h4 class="option-title">
+                    {% if option.is_date %}
+                        {{ option.date_time | date(format="%B %d, %Y at %H:%M") }}
+                    {% else %}
+                        {{ option.text }}
+                    {% endif %}
+                </h4>
+                <div class="vote-summary">
+                    <span class="vote-count">{{ option.vote_count }} vote{% if option.vote_count != 1 %}s{% endif %}</span>
+                    {% if voting_details.total_votes > 0 %}
+                    <span class="vote-percentage">({{ (option.vote_count / voting_details.total_votes * 100) | round }}%)</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if option.voters %}
+            <div class="voters-list">
+                {% for vote in option.voters %}
+                <div class="voter-item">
+                    <span class="voter-name">{{ vote.username }}</span>
+                    <span class="vote-time">{{ vote.created_at | date(format="%b %d, %Y at %H:%M") }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-voters">
+                <p>No votes for this option yet.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if voting_details.total_voters > 0 %}
+    <div class="voter-breakdown">
+        <h3>All Voters</h3>
+        <div class="all-voters-list">
+            {% set_global processed_voters = [] %}
+            {% for option in voting_details.options_with_voters %}
+                {% for vote in option.voters %}
+                    {% if vote.username not in processed_voters %}
+                        {% set_global processed_voters = processed_voters | concat(with=vote.username) %}
+                        <div class="voter-summary">
+                            <span class="voter-name">{{ vote.username }}</span>
+                            <div class="voter-choices">
+                                {% for opt in voting_details.options_with_voters %}
+                                    {% set_global user_voted_for_option = false %}
+                                    {% for v in opt.voters %}
+                                        {% if v.username == vote.username %}
+                                            {% set_global user_voted_for_option = true %}
+                                            {% break %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if user_voted_for_option %}
+                                        <span class="choice-badge">
+                                            {% if opt.is_date %}
+                                                {{ opt.date_time | date(format="%b %d") }}
+                                            {% else %}
+                                                {{ opt.text | truncate(length=15) }}
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="poll-actions">
+        <a href="/polls/{{ voting_details.poll.id }}" class="btn btn-primary">Back to Poll</a>
+        <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+.poll-voters {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.poll-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.poll-header h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.poll-description {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 15px;
+}
+
+.poll-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.voting-summary {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2em;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.option-section {
+    margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.option-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.option-title {
+    margin: 0;
+    color: #2c3e50;
+    flex-grow: 1;
+}
+
+.vote-summary {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: #666;
+}
+
+.vote-count {
+    font-weight: bold;
+}
+
+.vote-percentage {
+    font-size: 0.9em;
+}
+
+.voters-list {
+    padding: 15px 20px;
+}
+
+.voter-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.voter-item:last-child {
+    border-bottom: none;
+}
+
+.voter-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.vote-time {
+    color: #666;
+    font-size: 0.85em;
+}
+
+.no-voters {
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+}
+
+.voter-breakdown {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.all-voters-list {
+    display: grid;
+    gap: 15px;
+}
+
+.voter-summary {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.voter-summary .voter-name {
+    font-weight: bold;
+    color: #2c3e50;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.voter-choices {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.choice-badge {
+    background: #3498db;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+.poll-actions {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 0 10px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .poll-voters {
+        padding: 15px;
+    }
+    
+    .poll-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .summary-stats {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .option-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .voter-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .voter-choices {
+        justify-content: flex-start;
+    }
+}
+</style>
+{% endblock %}

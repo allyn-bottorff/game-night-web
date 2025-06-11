@@ -1,6 +1,6 @@
 use dotenv::dotenv;
 use game_night_web::db;
-use game_night_web::models::user::User;
+use game_night_web::models::User;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
