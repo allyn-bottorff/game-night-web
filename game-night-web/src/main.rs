@@ -14,6 +14,8 @@ extern crate rocket;
 use dotenv::dotenv;
 use rocket::fairing::AdHoc;
 use rocket::fs::{relative, FileServer};
+use rocket::response::Redirect;
+use rocket::{catch, catchers, uri};
 use rocket_dyn_templates::Template;
 use std::env;
 
@@ -24,6 +26,18 @@ mod models;
 mod routes;
 
 use routes::*;
+
+/// Error catcher for 401 Unauthorized responses.
+/// 
+/// This catcher intercepts 401 status responses and redirects unauthenticated
+/// users to the login page instead of showing a raw error response.
+/// 
+/// # Returns
+/// Redirect to the login page
+#[catch(401)]
+fn unauthorized() -> Redirect {
+    Redirect::to(uri!(login_page))
+}
 
 /// Main application entry point that configures and launches the Rocket web server.
 /// 
@@ -73,6 +87,7 @@ fn rocket() -> _ {
             ],
         )
         .mount("/static", FileServer::from(relative!("src/static")))
+        .register("/", catchers![unauthorized])
         .attach(Template::fairing())
         .attach(AdHoc::try_on_ignite("Database Setup", |rocket| async {
             let pool = db::init_pool().await;
