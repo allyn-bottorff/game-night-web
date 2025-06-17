@@ -25,22 +25,20 @@ mod db;
 mod models;
 mod routes;
 
-use routes::*;
-
 /// Error catcher for 401 Unauthorized responses.
-/// 
+///
 /// This catcher intercepts 401 status responses and redirects unauthenticated
 /// users to the login page instead of showing a raw error response.
-/// 
+///
 /// # Returns
 /// Redirect to the login page
 #[catch(401)]
 fn unauthorized() -> Redirect {
-    Redirect::to(uri!(login_page))
+    Redirect::to(uri!(routes::login_page))
 }
 
 /// Main application entry point that configures and launches the Rocket web server.
-/// 
+///
 /// This function:
 /// - Loads environment variables from .env file
 /// - Initializes logging
@@ -50,7 +48,7 @@ fn unauthorized() -> Redirect {
 /// - Initializes database connection pool
 /// - Runs database migrations
 /// - Creates default admin user if needed
-/// 
+///
 /// # Returns
 /// A configured Rocket instance ready for launch
 #[rocket::launch]
@@ -65,25 +63,25 @@ fn rocket() -> _ {
         .mount(
             "/",
             rocket::routes![
-                index,
-                login_page,
-                login_post,
-                logout,
-                dashboard,
-                get_polls,
-                poll_detail,
-                poll_voters,
-                create_poll_page,
-                create_poll_post,
-                vote_on_poll,
-                delete_poll,
-                profile,
-                change_password,
-                admin_users,
-                add_user_page,
-                add_user_post,
-                toggle_user_role,
-                metrics_endpoint
+                routes::index,
+                routes::login_page,
+                routes::login_post,
+                routes::logout,
+                routes::dashboard,
+                routes::get_polls,
+                routes::poll_detail,
+                routes::poll_voters,
+                routes::create_poll_page,
+                routes::create_poll_post,
+                routes::vote_on_poll,
+                routes::delete_poll,
+                routes::profile,
+                routes::change_password,
+                routes::admin_users,
+                routes::add_user_page,
+                routes::add_user_post,
+                routes::toggle_user_role,
+                routes::metrics_endpoint
             ],
         )
         .mount("/static", FileServer::from(relative!("src/static")))
