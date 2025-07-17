@@ -15,16 +15,19 @@ use chrono::Utc;
 use log::{error, info};
 use sqlx::{Row, SqlitePool};
 
-use crate::models::{NewPollForm, PollOption, PollWithCreator, OptionWithVoters, VoteWithUser, PollVotingDetails, User};
+use crate::models::{
+    NewOptionsForm, NewPollForm, OptionWithVoters, PollOption, PollVotingDetails, PollWithCreator,
+    User, VoteWithUser,
+};
 
 /// Retrieves all active (non-expired) polls from the database.
-/// 
+///
 /// This function queries for polls that have not yet reached their
 /// expiration date, ordered by creation date (most recent first).
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Vec<PollWithCreator>)` - Vector of active polls with creator information
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -42,13 +45,13 @@ pub async fn get_active_polls(pool: &SqlitePool) -> Result<Vec<PollWithCreator>,
 }
 
 /// Retrieves all expired polls from the database.
-/// 
+///
 /// This function queries for polls that have passed their expiration
 /// date, ordered by creation date (most recent first).
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Vec<PollWithCreator>)` - Vector of expired polls with creator information
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -66,14 +69,14 @@ pub async fn get_expired_polls(pool: &SqlitePool) -> Result<Vec<PollWithCreator>
 }
 
 /// Retrieves a specific poll by its ID with creator information.
-/// 
+///
 /// This function fetches a single poll from the database including
 /// the creator's username for display purposes.
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `poll_id` - Unique identifier of the poll to retrieve
-/// 
+///
 /// # Returns
 /// * `Ok(PollWithCreator)` - The poll with creator information
 /// * `Err(sqlx::Error)` - Database error if poll not found or query fails
@@ -94,14 +97,14 @@ pub async fn get_poll_by_id(
 }
 
 /// Retrieves all voting options for a specific poll.
-/// 
+///
 /// This function fetches all options for a poll including their
 /// vote counts calculated from the votes table.
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `poll_id` - ID of the poll to get options for
-/// 
+///
 /// # Returns
 /// * `Ok(Vec<PollOption>)` - Vector of poll options with vote counts
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -122,15 +125,15 @@ pub async fn get_poll_options(
 }
 
 /// Retrieves all option IDs that a specific user has voted for in a poll.
-/// 
+///
 /// This function is used to determine which options a user has already
 /// voted for, enabling the UI to show their current voting status.
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `poll_id` - ID of the poll to check votes for
 /// * `user_id` - ID of the user whose votes to retrieve
-/// 
+///
 /// # Returns
 /// * `Ok(Vec<i64>)` - Vector of option IDs the user has voted for
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -154,23 +157,23 @@ pub async fn get_user_votes(
 }
 
 /// Creates a new poll with options in the database.
-/// 
+///
 /// This function handles the complete poll creation process:
 /// 1. Parses and validates the expiration date
 /// 2. Creates the poll record in a transaction
 /// 3. Parses comma-separated options
 /// 4. Detects and handles date/time options
 /// 5. Inserts all options for the poll
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `form` - New poll form data containing title, description, expiration, and options
 /// * `user_id` - ID of the user creating the poll
-/// 
+///
 /// # Returns
 /// * `Ok(i64)` - The ID of the newly created poll
 /// * `Err(sqlx::Error)` - Database error or invalid date format
-/// 
+///
 /// # Date Format
 /// Expiration dates should be in format: YYYY-MM-DDTHH:MM
 /// Options can include dates in the same format for date-based voting
@@ -244,22 +247,144 @@ pub async fn create_poll(
     Ok(poll_id)
 }
 
+/// Add new options to an existing poll
+pub async fn add_poll_options(
+    pool: &SqlitePool,
+    poll_id: i64,
+    form: &NewOptionsForm,
+) -> Result<i64, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let options = form
+        .options
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<&str>>();
+
+    for option in options {
+        let is_date = option.contains("T") && option.len() >= 16;
+        let date_time = if is_date {
+            match chrono::DateTime::parse_from_rfc3339(&format!("{}:00Z", option)) {
+                Ok(dt) => Some(dt.with_timezone(&Utc)),
+                Err(_) => None,
+            }
+        } else {
+            None
+        };
+        sqlx::query("INSERT INTO options (poll_id, text, is_date, date_time) VALUES(?, ?, ?, ?)")
+            .bind(poll_id)
+            .bind(option)
+            .bind(is_date)
+            .bind(date_time)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+
+    info!("Added new options to poll {}", poll_id);
+    Ok(poll_id)
+}
+
+/// Remove a specific option from a poll (creator/admin only)
+///
+/// This function removes a poll option and all associated votes.
+/// Only the poll creator or admin users can remove options.
+///
+/// # Arguments
+/// * `pool` - Database connection pool
+/// * `poll_id` - ID of the poll containing the option
+/// * `option_id` - ID of the option to remove
+/// * `user_id` - ID of the user requesting removal
+/// * `is_admin` - Whether the requesting user is an admin
+///
+/// # Returns
+/// * `Ok(())` - Option removed successfully
+/// * `Err(sqlx::Error)` - Database error or permission denied (RowNotFound)
+pub async fn remove_poll_option(
+    pool: &SqlitePool,
+    poll_id: i64,
+    option_id: i64,
+    user_id: i64,
+    is_admin: bool,
+) -> Result<(), sqlx::Error> {
+    // First check if the poll exists and user has permission
+    let poll = sqlx::query_as::<_, crate::models::Poll>(
+        "SELECT id, title, description, creator_id, created_at, expires_at FROM polls WHERE id = ?"
+    )
+    .bind(poll_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match poll {
+        Some(poll) => {
+            // Check if user has permission (creator or admin)
+            if !is_admin && poll.creator_id != user_id {
+                return Err(sqlx::Error::RowNotFound);
+            }
+            
+            // Check if poll is expired
+            if poll.expires_at <= Utc::now() {
+                return Err(sqlx::Error::ColumnDecode {
+                    index: "expired".to_string(),
+                    source: Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Cannot modify expired poll",
+                    )),
+                });
+            }
+        }
+        None => {
+            return Err(sqlx::Error::RowNotFound);
+        }
+    }
+
+    // Verify the option belongs to this poll
+    let option = sqlx::query("SELECT id FROM options WHERE id = ? AND poll_id = ?")
+        .bind(option_id)
+        .bind(poll_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if option.is_none() {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Delete all votes for this option
+    sqlx::query("DELETE FROM votes WHERE option_id = ?")
+        .bind(option_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete the option
+    sqlx::query("DELETE FROM options WHERE id = ?")
+        .bind(option_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    info!("Option {} removed from poll {} by user {}", option_id, poll_id, user_id);
+    Ok(())
+}
+
 /// Handles voting on a poll option (toggle functionality).
-/// 
+///
 /// This function implements vote toggling - if the user has already
 /// voted for the option, it removes their vote. If they haven't
 /// voted for the option, it adds their vote.
-/// 
+///
 /// # Vote Logic
 /// - If user has already voted for this option: Remove the vote
 /// - If user has not voted for this option: Add the vote
 /// - Users can vote for multiple options in the same poll
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `option_id` - ID of the poll option to vote for/against
 /// * `user_id` - ID of the user casting the vote
-/// 
+///
 /// # Returns
 /// * `Ok(())` - Vote operation completed successfully
 /// * `Err(sqlx::Error)` - Database error if operation fails
@@ -319,27 +444,32 @@ pub async fn vote_on_poll(
 // }
 
 /// Deletes a poll and all associated data (admin or creator only).
-/// 
+///
 /// This function performs a cascading delete of a poll, removing:
 /// 1. All votes for the poll's options
 /// 2. All options for the poll
 /// 3. The poll itself
-/// 
+///
 /// # Permission Checks
 /// - Admins can delete any poll
 /// - Regular users can only delete polls they created
 /// - Returns RowNotFound error if user lacks permission
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `poll_id` - ID of the poll to delete
 /// * `user_id` - ID of the user requesting deletion
 /// * `is_admin` - Whether the requesting user is an admin
-/// 
+///
 /// # Returns
 /// * `Ok(())` - Poll deleted successfully
 /// * `Err(sqlx::Error)` - Database error or permission denied (RowNotFound)
-pub async fn delete_poll(pool: &SqlitePool, poll_id: i64, user_id: i64, is_admin: bool) -> Result<(), sqlx::Error> {
+pub async fn delete_poll(
+    pool: &SqlitePool,
+    poll_id: i64,
+    user_id: i64,
+    is_admin: bool,
+) -> Result<(), sqlx::Error> {
     // First check if user has permission to delete this poll
     if !is_admin {
         let poll = sqlx::query_as::<_, crate::models::Poll>(
@@ -363,12 +493,10 @@ pub async fn delete_poll(pool: &SqlitePool, poll_id: i64, user_id: i64, is_admin
     let mut tx = pool.begin().await?;
 
     // Delete all votes for this poll's options
-    sqlx::query(
-        "DELETE FROM votes WHERE option_id IN (SELECT id FROM options WHERE poll_id = ?)"
-    )
-    .bind(poll_id)
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query("DELETE FROM votes WHERE option_id IN (SELECT id FROM options WHERE poll_id = ?)")
+        .bind(poll_id)
+        .execute(&mut *tx)
+        .await?;
 
     // Delete all options for this poll
     sqlx::query("DELETE FROM options WHERE poll_id = ?")
@@ -389,14 +517,14 @@ pub async fn delete_poll(pool: &SqlitePool, poll_id: i64, user_id: i64, is_admin
 }
 
 /// Retrieves all users who voted for a specific poll option.
-/// 
+///
 /// This function returns the list of users who cast votes for
 /// a particular option, ordered by when they voted.
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `option_id` - ID of the poll option to get voters for
-/// 
+///
 /// # Returns
 /// * `Ok(Vec<User>)` - Vector of users who voted for this option
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -417,14 +545,14 @@ pub async fn get_voters_for_option(
 }
 
 /// Retrieves all voters for a poll with their complete voting choices.
-/// 
+///
 /// This function returns each unique voter along with all the option IDs
 /// they voted for in the specified poll. Used for detailed voter analysis.
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `poll_id` - ID of the poll to get voters for
-/// 
+///
 /// # Returns
 /// * `Ok(Vec<(User, Vec<i64>)>)` - Vector of tuples containing each voter and their option IDs
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -446,7 +574,7 @@ pub async fn get_poll_voters(
     .await?;
 
     let mut result = Vec::new();
-    
+
     for voter in voters {
         // Get all option IDs this user voted for in this poll
         let voted_options = sqlx::query_scalar::<_, i64>(
@@ -468,21 +596,21 @@ pub async fn get_poll_voters(
 }
 
 /// Retrieves comprehensive voting details for a poll.
-/// 
+///
 /// This function aggregates all voting information for a poll into
 /// a single structure containing the poll, all options with their voters,
 /// and summary statistics.
-/// 
+///
 /// # Data Collected
 /// - Poll information with creator details
 /// - All options with individual vote details and voter information
 /// - Total vote count across all options
 /// - Count of unique voters who participated
-/// 
+///
 /// # Arguments
 /// * `pool` - Database connection pool
 /// * `poll_id` - ID of the poll to get detailed information for
-/// 
+///
 /// # Returns
 /// * `Ok(PollVotingDetails)` - Complete voting details structure
 /// * `Err(sqlx::Error)` - Database error if query fails
@@ -492,14 +620,14 @@ pub async fn get_poll_voting_details(
 ) -> Result<PollVotingDetails, sqlx::Error> {
     // Get the poll
     let poll = get_poll_by_id(pool, poll_id).await?;
-    
+
     // Get all options for this poll
     let options = get_poll_options(pool, poll_id).await?;
-    
+
     let mut options_with_voters = Vec::new();
     let mut total_votes = 0;
     let mut all_voters = std::collections::HashSet::new();
-    
+
     for option in options {
         // Get votes for this option with user information
         let votes_with_users = sqlx::query_as::<_, VoteWithUser>(
@@ -512,14 +640,14 @@ pub async fn get_poll_voting_details(
         .bind(option.id)
         .fetch_all(pool)
         .await?;
-        
+
         total_votes += votes_with_users.len() as i64;
-        
+
         // Track unique voters
         for vote in &votes_with_users {
             all_voters.insert(vote.user_id);
         }
-        
+
         let option_with_voters = OptionWithVoters {
             id: option.id,
             poll_id: option.poll_id,
@@ -529,10 +657,10 @@ pub async fn get_poll_voting_details(
             vote_count: votes_with_users.len() as i64,
             voters: votes_with_users,
         };
-        
+
         options_with_voters.push(option_with_voters);
     }
-    
+
     Ok(PollVotingDetails {
         poll,
         options_with_voters,
@@ -542,22 +670,22 @@ pub async fn get_poll_voting_details(
 }
 
 /// Formats poll data into JSON structure for template rendering.
-/// 
+///
 /// This function converts poll and voting data into a JSON structure
 /// suitable for use in Tera templates, including vote counts, user voting
 /// status, and expiration information.
-/// 
+///
 /// # Template Data Included
 /// - Poll basic information (title, description, creator, dates)
 /// - Expiration status (is_expired boolean)
 /// - All options with vote counts and user voting status
 /// - Total vote count across all options
-/// 
+///
 /// # Arguments
 /// * `poll` - Poll information with creator details
 /// * `options` - Array of poll options with vote counts
 /// * `user_votes` - Array of option IDs the current user has voted for
-/// 
+///
 /// # Returns
 /// A JSON value containing all formatted poll data for template use
 pub fn format_poll_for_template(

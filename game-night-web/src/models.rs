@@ -45,7 +45,7 @@ pub enum MessageType {
 impl ToString for MessageType {
     /// Converts the MessageType enum to a string representation.
     /// Used for CSS class names and template rendering.
-    /// 
+    ///
     /// # Returns
     /// A string representation of the message type
     fn to_string(&self) -> String {
@@ -126,10 +126,10 @@ pub struct ToggleRoleForm {
 
 impl User {
     /// Verifies a plain text password against the user's stored password hash.
-    /// 
+    ///
     /// # Arguments
     /// * `password` - The plain text password to verify
-    /// 
+    ///
     /// # Returns
     /// `true` if the password matches the stored hash, `false` otherwise
     pub fn verify_password(&self, password: &str) -> bool {
@@ -137,10 +137,10 @@ impl User {
     }
 
     /// Hashes a plain text password using bcrypt with cost factor 12.
-    /// 
+    ///
     /// # Arguments
     /// * `password` - The plain text password to hash
-    /// 
+    ///
     /// # Returns
     /// `Ok(String)` containing the hashed password, or `Err` if hashing fails
     pub fn hash_password(password: &str) -> Result<String, bcrypt::BcryptError> {
@@ -236,6 +236,13 @@ pub struct NewPollForm {
     pub options: String,
 }
 
+/// Form data structure for creating new poll options.
+#[derive(Debug, FromForm, Deserialize)]
+pub struct NewOptionsForm {
+    /// Comma-separated list of poll options
+    pub options: String,
+}
+
 /// Form data structure for casting votes on poll options.
 /// Simple form containing only the option ID being voted for.
 #[derive(Debug, FromForm, Deserialize)]
@@ -307,3 +314,4 @@ pub struct PollVotingDetails {
 //         }
 //     }
 // }
+

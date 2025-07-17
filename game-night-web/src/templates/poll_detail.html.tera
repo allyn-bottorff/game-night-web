@@ -59,12 +59,34 @@
                     <span class="vote-percentage">{{ (option.vote_count / poll.total_votes * 100) | round }}%</span>
                     {% endif %}
                 </div>
+                
+                {% if not poll.is_expired and (user.is_admin or poll.creator_id == user.id) %}
+                <div class="option-actions">
+                    <form action="/polls/{{ poll.id }}/remove_option/{{ option.id }}" method="post" class="remove-option-form" onsubmit="return confirm('Are you sure you want to remove this option? This will also remove all votes for this option.');">
+                        <button type="submit" class="btn btn-danger btn-sm remove-option-btn" title="Remove this option">×</button>
+                    </form>
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
         
         {% if not poll.is_expired %}
         </form>
+        {% endif %}
+        
+        {% if not poll.is_expired and (user.is_admin or poll.creator_id == user.id) %}
+        <div class="add-options-section">
+            <h4>Add New Options</h4>
+            <form action="/polls/{{ poll.id }}/add_options" method="post" class="add-options-form">
+                <div class="form-group">
+                    <label for="new-options">New Options (comma-separated)</label>
+                    <input type="text" id="new-options" name="options" placeholder="Option 1, Option 2, 2024-03-15T14:30" required>
+                    <small class="form-help">Enter text options or dates in format YYYY-MM-DDTHH:MM</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Options</button>
+            </form>
+        </div>
         {% endif %}
     </div>
     

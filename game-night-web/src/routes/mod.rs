@@ -33,14 +33,16 @@ use sqlx::SqlitePool;
 
 use crate::auth::{AdminUser, AuthenticatedUser};
 use crate::controllers::{polls, users};
-use crate::models::{NewPollForm, VoteForm, ChangePasswordForm, LoginForm, NewUserForm, ToggleRoleForm};
+use crate::models::{
+    ChangePasswordForm, LoginForm, NewOptionsForm, NewPollForm, NewUserForm, ToggleRoleForm, VoteForm,
+};
 
 // ============================================================================
 // Public routes (no authentication required)
 // ============================================================================
 
 /// Root route that redirects to the login page.
-/// 
+///
 /// This is the main entry point for the application when users
 /// visit the root URL without being authenticated.
 #[get("/")]
@@ -49,13 +51,13 @@ pub async fn index() -> Redirect {
 }
 
 /// Displays the user login page.
-/// 
+///
 /// This route renders the login form template with any flash messages
 /// from previous login attempts or redirects.
-/// 
+///
 /// # Parameters
 /// * `flash` - Optional flash message from previous requests
-/// 
+///
 /// # Returns
 /// Login page template with flash messages if present
 #[get("/login")]
@@ -70,16 +72,16 @@ pub async fn login_page(flash: Option<rocket::request::FlashMessage<'_>>) -> Tem
 }
 
 /// Handles user login form submission.
-/// 
+///
 /// This route processes login credentials, updates metrics,
 /// and either redirects to the dashboard on success or back
 /// to the login page with an error message.
-/// 
+///
 /// # Parameters
 /// * `form` - Login form data (username and password)
 /// * `cookies` - Cookie jar for setting session cookies
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Redirect)` - Redirects to dashboard on successful login
 /// * `Err(Flash<Redirect>)` - Redirects to login page with error
@@ -102,13 +104,13 @@ pub async fn login_post(
 }
 
 /// Handles user logout by clearing session cookies.
-/// 
+///
 /// This route logs out the current user and redirects to the
 /// login page with a confirmation message.
-/// 
+///
 /// # Parameters
 /// * `cookies` - Cookie jar for clearing session cookies
-/// 
+///
 /// # Returns
 /// Flash redirect to login page with logout confirmation
 #[get("/logout")]
@@ -121,15 +123,15 @@ pub async fn logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
 // ============================================================================
 
 /// Main dashboard page showing active and expired polls.
-/// 
+///
 /// This is the primary landing page for authenticated users,
 /// displaying an overview of all polls in the system.
-/// 
+///
 /// # Parameters
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `pool` - Database connection pool
 /// * `flash` - Optional flash messages from previous actions
-/// 
+///
 /// # Returns
 /// * `Ok(Template)` - Dashboard template with poll data
 /// * `Err(Status)` - Internal server error if database query fails
@@ -160,14 +162,14 @@ pub async fn dashboard(
 }
 
 /// Displays all polls page with active and expired polls.
-/// 
+///
 /// This route provides a comprehensive view of all polls in the system,
 /// similar to the dashboard but focused specifically on poll listing.
-/// 
+///
 /// # Parameters
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Template)` - Polls page template with poll data
 /// * `Err(Status)` - Internal server error if database query fails
@@ -196,16 +198,16 @@ pub async fn get_polls(
 }
 
 /// Displays detailed view of a specific poll with voting options.
-/// 
+///
 /// This route shows a poll's details, options, vote counts, and allows
 /// users to cast or change their votes if the poll is still active.
-/// 
+///
 /// # Parameters
 /// * `poll_id` - Unique identifier of the poll to display
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `pool` - Database connection pool
 /// * `flash` - Optional flash messages from voting or other actions
-/// 
+///
 /// # Returns
 /// * `Ok(Template)` - Poll detail template with voting interface
 /// * `Err(Status::NotFound)` - If poll doesn't exist
@@ -243,21 +245,21 @@ pub async fn poll_detail(
 }
 
 /// Displays detailed voter information for a poll (creator/admin only).
-/// 
+///
 /// This route shows who voted for each option in a poll. Access is restricted
 /// to the poll creator and admin users for privacy reasons.
-/// 
+///
 /// # Access Control
 /// - Poll creators can view voters for their own polls
 /// - Admin users can view voters for any poll
 /// - Regular users cannot access this information
-/// 
+///
 /// # Parameters
 /// * `poll_id` - Unique identifier of the poll
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `pool` - Database connection pool
 /// * `flash` - Optional flash messages
-/// 
+///
 /// # Returns
 /// * `Ok(Template)` - Voters page with detailed voting information
 /// * `Err(Status::NotFound)` - If poll doesn't exist
@@ -296,14 +298,14 @@ pub async fn poll_voters(
 }
 
 /// Displays the poll creation form page.
-/// 
+///
 /// This route renders the form for creating new polls, including
 /// fields for title, description, expiration date, and options.
-/// 
+///
 /// # Parameters
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `flash` - Optional flash messages from previous creation attempts
-/// 
+///
 /// # Returns
 /// Poll creation form template
 #[get("/polls/create")]
@@ -322,16 +324,16 @@ pub async fn create_poll_page(
 }
 
 /// Handles poll creation form submission.
-/// 
+///
 /// This route processes the new poll form data, creates the poll
 /// and its options in the database, and redirects to the new poll's
 /// detail page on success.
-/// 
+///
 /// # Parameters
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `form` - New poll form data
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Redirect)` - Redirects to new poll detail page on success
 /// * `Err(Flash<Redirect>)` - Redirects to creation page with error
@@ -351,18 +353,18 @@ pub async fn create_poll_post(
 }
 
 /// Handles voting on poll options (toggle functionality).
-/// 
+///
 /// This route processes vote submissions with the following logic:
 /// - If user already voted for the option: remove their vote
 /// - If user hasn't voted for the option: add their vote
 /// - Prevents voting on expired polls
-/// 
+///
 /// # Parameters
 /// * `poll_id` - Unique identifier of the poll
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `form` - Vote form data containing option ID
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Redirect)` - Redirects back to poll detail page
 /// * `Err(Flash<Redirect>)` - Redirects with error message
@@ -400,22 +402,122 @@ pub async fn vote_on_poll(
     }
 }
 
+/// Handles adding additional options to an existing poll
+///
+/// # Parameters
+/// * `poll_id` - Unique identifier of the poll
+/// * `user` - Authenticated user (enforced by request guard)
+/// * `form` - New options form data containing comma-separated options
+/// * `pool` - Database connection pool
+///
+/// # Returns
+/// * `Ok(Redirect)` - Redirects back to poll detail page
+/// * `Err(Flash<Redirect>)` - Redirects with error message
+#[post("/polls/<poll_id>/add_options", data = "<form>")]
+pub async fn add_options_to_poll(
+    poll_id: i64,
+    user: AuthenticatedUser,
+    form: Form<NewOptionsForm>,
+    pool: &State<SqlitePool>,
+) -> Result<Redirect, Flash<Redirect>> {
+    // Check if poll is active
+    let poll = match polls::get_poll_by_id(pool, poll_id).await {
+        Ok(poll) => poll,
+        Err(_) => {
+            return Err(Flash::error(
+                Redirect::to(uri!(poll_detail(poll_id))),
+                "Poll not found.",
+            ));
+        }
+    };
+
+    if poll.expires_at <= chrono::Utc::now() {
+        return Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            "Cannot modify an expired poll.",
+        ));
+    }
+
+    // Check if user has permission to add options (creator or admin)
+    if !user.is_admin && poll.creator_id != user.id {
+        return Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            "You don't have permission to modify this poll.",
+        ));
+    }
+
+    match polls::add_poll_options(pool, poll_id, &form).await {
+        Ok(_) => Ok(Redirect::to(uri!(poll_detail(poll_id)))),
+        Err(err) => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            format!("Failed to add options: {}", err),
+        )),
+    }
+}
+
+/// Handles removing a specific option from a poll (creator/admin only).
+///
+/// This route removes a poll option and all associated votes.
+/// Access is restricted to the poll creator and admin users.
+///
+/// # Access Control
+/// - Poll creators can remove options from their own polls
+/// - Admin users can remove options from any poll
+/// - Regular users cannot remove options from others' polls
+/// - Cannot remove options from expired polls
+///
+/// # Parameters
+/// * `poll_id` - Unique identifier of the poll
+/// * `option_id` - Unique identifier of the option to remove
+/// * `user` - Authenticated user (enforced by request guard)
+/// * `pool` - Database connection pool
+///
+/// # Returns
+/// * `Ok(Flash<Redirect>)` - Success redirect to poll detail page
+/// * `Err(Flash<Redirect>)` - Error redirect with message
+#[post("/polls/<poll_id>/remove_option/<option_id>")]
+pub async fn remove_poll_option(
+    poll_id: i64,
+    option_id: i64,
+    user: AuthenticatedUser,
+    pool: &State<SqlitePool>,
+) -> Result<Flash<Redirect>, Flash<Redirect>> {
+    match polls::remove_poll_option(pool, poll_id, option_id, user.id, user.is_admin).await {
+        Ok(_) => Ok(Flash::success(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            "Option removed successfully.",
+        )),
+        Err(sqlx::Error::RowNotFound) => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            "You don't have permission to remove this option, or the option doesn't exist.",
+        )),
+        Err(sqlx::Error::ColumnDecode { index, .. }) if index == "expired" => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            "Cannot modify options in an expired poll.",
+        )),
+        Err(err) => Err(Flash::error(
+            Redirect::to(uri!(poll_detail(poll_id))),
+            format!("Failed to remove option: {}", err),
+        )),
+    }
+}
+
 /// Handles poll deletion (creator/admin only).
-/// 
+///
 /// This route deletes a poll and all associated data including
 /// options and votes. Access is restricted to the poll creator
 /// and admin users.
-/// 
+///
 /// # Access Control
 /// - Poll creators can delete their own polls
 /// - Admin users can delete any poll
 /// - Regular users cannot delete others' polls
-/// 
+///
 /// # Parameters
 /// * `poll_id` - Unique identifier of the poll to delete
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Flash<Redirect>)` - Success redirect to dashboard
 /// * `Err(Flash<Redirect>)` - Error redirect with message
@@ -446,15 +548,15 @@ pub async fn delete_poll(
 // ============================================================================
 
 /// Displays the user profile page with statistics.
-/// 
+///
 /// This route shows the user's profile information including
 /// statistics about polls created and votes cast.
-/// 
+///
 /// # Parameters
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `pool` - Database connection pool
 /// * `flash` - Optional flash messages from profile updates
-/// 
+///
 /// # Returns
 /// * `Ok(Template)` - Profile page template with user statistics
 /// * `Err(Status::InternalServerError)` - If database query fails
@@ -482,15 +584,15 @@ pub async fn profile(
 }
 
 /// Handles password change requests.
-/// 
+///
 /// This route processes password change forms, validates the current
 /// password, and updates the user's password hash in the database.
-/// 
+///
 /// # Parameters
 /// * `user` - Authenticated user (enforced by request guard)
 /// * `form` - Password change form data
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Flash<Redirect>)` - Success redirect to profile page
 /// * `Err(Flash<Redirect>)` - Error redirect to profile page
@@ -508,18 +610,18 @@ pub async fn change_password(
 // ============================================================================
 
 /// Displays the admin user management page.
-/// 
+///
 /// This route shows all users in the system and provides admin
 /// controls for managing user roles and accounts.
-/// 
+///
 /// # Access Control
 /// Requires admin privileges (enforced by AdminUser request guard)
-/// 
+///
 /// # Parameters
 /// * `admin` - Admin user (enforced by request guard)
 /// * `pool` - Database connection pool
 /// * `flash` - Optional flash messages from admin actions
-/// 
+///
 /// # Returns
 /// * `Ok(Template)` - Admin users page template
 /// * `Err(Status::InternalServerError)` - If database query fails
@@ -545,19 +647,19 @@ pub async fn admin_users(
 }
 
 /// Handles user role changes (promote/demote admin status).
-/// 
+///
 /// This route allows admins to change user roles between regular
 /// user and admin status. Includes safety checks to prevent
 /// admins from demoting themselves.
-/// 
+///
 /// # Access Control
 /// Requires admin privileges (enforced by AdminUser request guard)
-/// 
+///
 /// # Parameters
 /// * `admin` - Admin user performing the action
 /// * `form` - Role toggle form data
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Flash<Redirect>)` - Success redirect to admin users page
 /// * `Err(Flash<Redirect>)` - Error redirect with message
@@ -571,17 +673,17 @@ pub async fn toggle_user_role(
 }
 
 /// Displays the add user form page (admin only).
-/// 
+///
 /// This route renders the form for creating new user accounts,
 /// including options for setting admin privileges.
-/// 
+///
 /// # Access Control
 /// Requires admin privileges (enforced by AdminUser request guard)
-/// 
+///
 /// # Parameters
 /// * `admin` - Admin user (enforced by request guard)
 /// * `flash` - Optional flash messages from previous creation attempts
-/// 
+///
 /// # Returns
 /// Add user form template
 #[get("/admin/users/add")]
@@ -600,18 +702,18 @@ pub async fn add_user_page(
 }
 
 /// Handles new user creation form submission (admin only).
-/// 
+///
 /// This route processes new user forms, validates the data,
 /// and creates new user accounts in the database.
-/// 
+///
 /// # Access Control
 /// Requires admin privileges (enforced by AdminUser request guard)
-/// 
+///
 /// # Parameters
 /// * `_admin` - Admin user (authentication only, not used in logic)
 /// * `form` - New user form data
 /// * `pool` - Database connection pool
-/// 
+///
 /// # Returns
 /// * `Ok(Flash<Redirect>)` - Success redirect to admin users page
 /// * `Err(Flash<Redirect>)` - Error redirect to add user page
@@ -629,18 +731,18 @@ pub async fn add_user_post(
 // ============================================================================
 
 /// Prometheus metrics endpoint for monitoring and observability.
-/// 
+///
 /// This route exposes application metrics in Prometheus format for
 /// scraping by monitoring systems. Metrics include database statistics,
 /// login attempts, and other operational data.
-/// 
+///
 /// # Public Access
 /// This endpoint is intentionally public to allow monitoring systems
 /// to scrape metrics without authentication.
-/// 
+///
 /// # Parameters
 /// * `pool` - Database connection pool for updating metrics
-/// 
+///
 /// # Returns
 /// Plain text response in Prometheus exposition format
 #[get("/metrics")]

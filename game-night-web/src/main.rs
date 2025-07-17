@@ -74,6 +74,8 @@ fn rocket() -> _ {
                 routes::create_poll_page,
                 routes::create_poll_post,
                 routes::vote_on_poll,
+                routes::add_options_to_poll,
+                routes::remove_poll_option,
                 routes::delete_poll,
                 routes::profile,
                 routes::change_password,
