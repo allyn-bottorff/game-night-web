@@ -61,7 +61,7 @@
                 </div>
                 
                 {% if not poll.is_expired and (user.is_admin or poll.creator_id == user.id) %}
-                <div class="option-actions">
+                <div class="option-actions edit-features" style="display: none;">
                     <form action="/polls/{{ poll.id }}/remove_option/{{ option.id }}" method="post" class="remove-option-form" onsubmit="return confirm('Are you sure you want to remove this option? This will also remove all votes for this option.');">
                         <button type="submit" class="btn btn-danger btn-sm remove-option-btn" title="Remove this option">×</button>
                     </form>
@@ -76,7 +76,10 @@
         {% endif %}
         
         {% if not poll.is_expired and (user.is_admin or poll.creator_id == user.id) %}
-        <div class="add-options-section">
+        <div class="poll-edit-controls">
+            <button type="button" id="edit-poll-btn" class="btn btn-secondary" onclick="toggleEditMode()">Edit Poll</button>
+        </div>
+        <div class="add-options-section edit-features" style="display: none;">
             <h4>Add New Options</h4>
             <form action="/polls/{{ poll.id }}/add_options" method="post" class="add-options-form">
                 <div class="form-group">
@@ -142,5 +145,28 @@
         window.location.reload();
     }, 30000);
     {% endif %}
+    
+    // Toggle edit mode for poll options
+    function toggleEditMode() {
+        const editFeatures = document.querySelectorAll('.edit-features');
+        const editButton = document.getElementById('edit-poll-btn');
+        const isEditing = editButton.textContent === 'Cancel Edit';
+        
+        if (isEditing) {
+            // Hide edit features
+            editFeatures.forEach(feature => {
+                feature.style.display = 'none';
+            });
+            editButton.textContent = 'Edit Poll';
+            editButton.className = 'btn btn-secondary';
+        } else {
+            // Show edit features
+            editFeatures.forEach(feature => {
+                feature.style.display = 'block';
+            });
+            editButton.textContent = 'Cancel Edit';
+            editButton.className = 'btn btn-warning';
+        }
+    }
 </script>
 {% endblock %}
